@@ -376,7 +376,7 @@ function parseStandings(csv){
   const entries=[];
   for(let i=start;i<lines.length;i++){
     const c=splitCSV(lines[i]);
-    const name=(c[8]||'').replace(/[\r\n\t]/g,'').trim();
+    const name=(c[8]||'').split('\r').join('').split('\n').join('').split('\t').join('').trim();
     const rank=parseFloat(c[10])||9999;
     if(!name||name==='Name'||name.startsWith('#')||rank===9999) continue;
     entries.push({name,goals:parseFloat(c[9])||0,rank,l:parseFloat(c[11])||0,m:parseFloat(c[12])||0,n:parseFloat(c[13])||0,fee:parseFloat(c[14])||0});
@@ -432,19 +432,17 @@ function parseWorld(csv){
 
   for(let r=0;r<grid.length;r++){
     NAME_COLS.forEach(c=>{
-      const val=(grid[r][c]||'').replace(/[\r\n\t]/g,'').trim();
-      if(!val||val.length<2||skip.includes(val)||/^\d+$/.test(val)) return;
+      const val=(grid[r][c]||'').split('\r').join('').split('\n').join('').split('\t').join('').trim();
+      if(!val||val.length<2||skip.includes(val)||/^[0-9]+$/.test(val)) return;
       const match=allEntries.find(e=>e.name.toLowerCase()===val.toLowerCase());
       if(!match) return;
       // Already found this person?
       if(participants.find(p=>p.name.toLowerCase()===val.toLowerCase())) return;
       const teams=[];const teamGoals=[];
       for(let tr=r+1;tr<Math.min(r+12,grid.length)&&teams.length<8;tr++){
-        const tv=(grid[tr][c]||'').replace(/[
-	]/g,'').trim();
-        const gv=(grid[tr][c+1]||'').replace(/[
-	]/g,'').trim();
-        if(!tv||tv==='Total'||tv==='Goals'||/^\d+$/.test(tv)) continue;
+        const tv=(grid[tr][c]||'').replace(/\r|\n|\t/g,'').trim();
+        const gv=(grid[tr][c+1]||'').replace(/\r|\n|\t/g,'').trim();
+        if(!tv||tv==='Total'||tv==='Goals'||/^[0-9]+$/.test(tv)) continue;
         if(/[a-zA-Z]/.test(tv)){ teams.push(tv); teamGoals.push(parseFloat(gv)||0); }
       }
       if(teams.length>0) participants.push({name:val,teams,teamGoals});
