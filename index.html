@@ -93,6 +93,9 @@
   .entry-teams { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; padding: 10px 12px; }
   .entry-team { background: #f4f7f4; border-radius: 6px; padding: 5px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #1a2e1a; }
   .entry-team .pot { font-size: 9px; color: #8aaa8a; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .entry-team-goals { font-size: 10px; color: #2e7d32; font-weight: 700; margin-top: 2px; }
+  .entry-team-goals { font-size: 10px; color: #2e7d32; font-weight: 700; margin-top: 2px; }
+  .entry-team-goals { font-size: 10px; color: #2e7d32; font-weight: 700; margin-top: 2px; }
 
   /* Fixtures */
   .score-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -432,13 +435,14 @@ function parseWorld(csv){
       if(!match) return;
       // Already found this person?
       if(participants.find(p=>p.name.toLowerCase()===val.toLowerCase())) return;
-      const teams=[];
+      const teams=[], teamGoals=[];
       for(let tr=r+1;tr<Math.min(r+12,grid.length)&&teams.length<8;tr++){
         const tv=(grid[tr][c]||'').replace(/[\r\n\t]/g,'').trim();
+        const gv=(grid[tr][c+1]||'').replace(/[\r\n\t]/g,'').trim();
         if(!tv||tv==='Total'||tv==='Goals'||/^\d+$/.test(tv)) continue;
-        if(/[a-zA-Z]/.test(tv)) teams.push(tv);
+        if(/[a-zA-Z]/.test(tv)){ teams.push(tv); teamGoals.push(parseFloat(gv)||0); }
       }
-      if(teams.length>0) participants.push({name:val,teams});
+      if(teams.length>0) participants.push({name:val,teams,teamGoals});
     });
   }
   return participants;
