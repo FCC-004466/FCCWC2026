@@ -52,9 +52,10 @@
   thead th:hover, thead th.sorted { color: #2e7d32; }
   tbody tr { border-bottom: 1px solid #e0ede0; transition: background 0.1s; cursor: pointer; }
   tbody tr:hover { background: #e8f5e9; }
-  tbody tr.rank-row-1 { background: #e8f5e9; border-left: 3px solid #2e7d32; }
-  tbody tr.rank-row-2 { background: #f0f9f0; border-left: 3px solid #66bb6a; }
-  tbody tr.rank-row-3 { background: #f5fbf5; border-left: 3px solid #a5d6a7; }
+  tbody tr.rank-row-1 { background: #fffde7; border-left: 3px solid #ffd700; }
+  tbody tr.rank-row-2 { background: #e8f5e9; border-left: 3px solid #2e7d32; }
+  tbody tr.rank-row-3 { background: #f0f9f0; border-left: 3px solid #66bb6a; }
+  tbody tr.rank-row-4 { background: #f5fbf5; border-left: 3px solid #a5d6a7; }
   tbody tr.rank-row-last { background: #fff8e1; border-left: 3px solid #ffd54f; }
   tbody td { padding: 10px 8px; vertical-align: middle; }
   .rank-wrap { display: flex; align-items: center; justify-content: center; width: 28px; }
@@ -87,6 +88,10 @@
   /* All entries */
   .entry-card { background: #fff; border: 1px solid #d4e8d4; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
   .entry-card-header { background: #f0f7f0; border-bottom: 1px solid #d4e8d4; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .entry-card.rank-1 .entry-card-header { background: #fffde7; border-left: 3px solid #ffd700; }
+  .entry-card.rank-2 .entry-card-header { background: #e8f5e9; border-left: 3px solid #2e7d32; }
+  .entry-card.rank-3 .entry-card-header { background: #f0f9f0; border-left: 3px solid #66bb6a; }
+  .entry-card.rank-4 .entry-card-header { background: #f5fbf5; border-left: 3px solid #a5d6a7; }
   .entry-card-header .e-name { font-weight: 700; font-size: 14px; color: #1a2e1a; }
   .entry-card-header .e-rank { font-size: 12px; color: #5a7a5a; }
   .entry-card-header .e-goals { font-size: 15px; font-weight: 700; color: #2e7d32; }
@@ -288,7 +293,7 @@ const ISO = {
   'Turkey':'tr','Turkiye':'tr','Türkiye':'tr','Bosnia':'ba','Bosnia and Herzegovina':'ba',
   'Sweden':'se','Czechia':'cz','Iraq':'iq','Ghana':'gh',
   'Cape Verde':'cv','C Verde':'cv','Cabo Verde':'cv','Haiti':'ht',
-  'Curacao':'cw','Congo':'cg','DR Congo':'cd','New Zealand':'nz',
+  'Curacao':'cw','Congo':'cd','DR Congo':'cd','DR Congo':'cd','New Zealand':'nz',
   'NZ':'nz','Jordan':'jo','Jordon':'jo','Qatar':'qa','Quatar':'qa',
   'Serbia':'rs','Ukraine':'ua','Poland':'pl','Wales':'gb-wls',
   'Venezuela':'ve','Chile':'cl','Peru':'pe','Honduras':'hn',
@@ -552,7 +557,7 @@ function renderLeaderboard(){
     const ip=/^[a-zA-Z]$/.test(e.name.trim())||e.name.trim().length<=1;
     const lastRk=allEntries.length?allEntries[allEntries.length-1].rank:0;
     const rankEl=e.rank===1?`<span class="rank-1">1</span>`:e.rank===2?`<span class="rank-2">2</span>`:e.rank===3?`<span class="rank-3">3</span>`:`<span class="rank-num">${e.rank}</span>`;
-    const rowClass=e.rank===1?'rank-row-1':e.rank===2?'rank-row-2':e.rank===3?'rank-row-3':e.rank===lastRk?'rank-row-last':'';
+    const rowClass=e.rank===1?'rank-row-1':e.rank===2?'rank-row-2':e.rank===3?'rank-row-3':e.rank===4?'rank-row-4':e.rank===lastRk?'rank-row-last':'';
     return `<tr onclick='openModal(${JSON.stringify(e).replace(/'/g,"&#39;")})' class="${rowClass}">
       <td><div class="rank-wrap">${rankEl}</div></td>
       <td class="name-cell ${ip?'placeholder':''}">${e.name}</td>
@@ -572,8 +577,9 @@ function renderEntries(){
     const teamsHtml=player&&player.teams.length
       ?player.teams.map((t,i)=>`<div class="entry-team"><span class="pot">${potLabels[i]}</span>${flag(t)} ${t}</div>`).join('')
       :`<div class="entry-team" style="grid-column:1/-1;color:#8aaa8a">Teams not yet assigned</div>`;
-    const rankEl=e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'#'+e.rank;
-    return `<div class="entry-card">
+    const rankEl='#'+e.rank;
+    const rankClass=e.rank===1?'rank-1':e.rank===2?'rank-2':e.rank===3?'rank-3':e.rank===4?'rank-4':'';
+    return `<div class="entry-card ${rankClass}">
       <div class="entry-card-header">
         <div><span class="e-name">${e.name}</span><span class="e-rank"> · ${rankEl}</span></div>
         <span class="e-goals">${e.goals} goals</span>
