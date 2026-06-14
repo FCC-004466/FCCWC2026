@@ -491,8 +491,8 @@ function parseFixtures(csv){
     const away=(c[12]||'').trim();
     if(!home&&!away) continue;
     const hgRaw=(c[9]||'').trim(),agRaw=(c[10]||'').trim();
-    const homeGoals=(hgRaw===''||hgRaw==='-')?null:parseInt(hgRaw);
-    const awayGoals=(agRaw===''||agRaw==='-')?null:parseInt(agRaw);
+    const homeGoals=hgRaw===''?null:parseInt(hgRaw);
+    const awayGoals=agRaw===''?null:parseInt(agRaw);
     const played=homeGoals!==null&&awayGoals!==null&&!isNaN(homeGoals)&&!isNaN(awayGoals);
     const isKO=matchNum>72;
     const groupLetter=/^[A-L]$/.test(raw)?raw:null;
@@ -575,7 +575,7 @@ function renderEntries(){
     const player=allWorldData.find(p=>p.name.toLowerCase()===e.name.toLowerCase());
     const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
     const teamsHtml=player&&player.teams.length
-      ?player.teams.map((t,i)=>`<div class="entry-team"><span class="pot">${potLabels[i]}</span>${flag(t)} ${t}<div style="font-size:10px;color:#2e7d32;font-weight:700;margin-top:2px">${player.teamGoals?player.teamGoals[i]||0:0} goals</div></div>`).join('')
+      ?player.teams.map((t,i)=>`<div class="entry-team"><span class="pot">${potLabels[i]}</span>${flag(t)} ${t}</div>`).join('')
       :`<div class="entry-team" style="grid-column:1/-1;color:#8aaa8a">Teams not yet assigned</div>`;
     const rankEl='#'+e.rank;
     const rankClass=e.rank===1?'rank-1':e.rank===2?'rank-2':e.rank===3?'rank-3':e.rank===4?'rank-4':'';
@@ -673,7 +673,5 @@ function renderGroups(){
 loadAll();
 setInterval(loadAll,5*60*1000);
 </script>
-<script data-goatcounter="https://kbtt.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-<script data-goatcounter="https://kbtt.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
