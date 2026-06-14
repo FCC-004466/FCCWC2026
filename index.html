@@ -177,7 +177,6 @@
     <button class="nav-tab" onclick="showPage('entries',this)">👥 All Entries</button>
     <button class="nav-tab" onclick="showPage('fixtures',this)">📅 Fixtures</button>
     <button class="nav-tab" onclick="showPage('groups',this)">📊 Groups</button>
-    <button class="nav-tab" onclick="showPage('bonus',this)">🎯 Bonus</button>
   </div>
 </header>
 
@@ -258,21 +257,6 @@
   </div>
 </div>
 
-<!-- BONUS PAGE -->
-<div id="page-bonus" class="page">
-  <div class="controls">
-    <div class="controls-inner">
-      <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
-      <span style="font-size:12px;color:#8aaa8a">Ranked by total goals conceded by 8 teams</span>
-    </div>
-  </div>
-  <div class="content-wrap-wide">
-    <div id="bonus-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:0.75rem">
-      <div class="state-div"><span class="spinner"></span> Loading…</div>
-    </div>
-  </div>
-</div>
-
 <footer>
   <div style="margin-bottom:6px;font-size:12px;color:#5a7a5a;font-weight:600">FCC World Cup Buster 2026 · Live data · Auto-refreshes every 5 mins</div>
   <div style="font-size:11px;color:#8aaa8a;max-width:600px;margin:0 auto;line-height:1.6">
@@ -349,179 +333,6 @@ function showPage(name,btn){
   btn.classList.add('active');
 }
 
-// ── Bonus group draw (fixed, seed 2026) ─────────────────────────────
-const BONUS_GROUPS = {
-  "judy o neill": 1,
-  "peter connell": 2,
-  "ciaran brennan": 3,
-  "dylan haughton": 4,
-  "donal moriarty": 1,
-  "damian ryan": 2,
-  "karen leeson": 3,
-  "adam christie": 4,
-  "kieran maher": 1,
-  "gary o connor": 2,
-  "patrick wallace": 3,
-  "warren o hare": 4,
-  "alan o toole": 1,
-  "bill mooney": 2,
-  "benny farren": 3,
-  "breen doris": 4,
-  "sean t guinan": 1,
-  "colin mc caffery": 2,
-  "kevin broderick": 3,
-  "james lee": 4,
-  "robert mahony": 1,
-  "shane swift": 2,
-  "peter boyd": 3,
-  "niall mc dermott": 4,
-  "catherine mahon": 1,
-  "declan cooney": 2,
-  "leon leonard": 3,
-  "orlaith maleady": 4,
-  "aaron smith": 1,
-  "jack tynan": 2,
-  "elaine tobin": 3,
-  "james culhane": 4,
-  "mick tynan": 1,
-  "rory little": 2,
-  "quintan greally": 3,
-  "stephen byrne": 4,
-  "stephen mchugh": 1,
-  "gerald curley": 2,
-  "william murray": 3,
-  "gary glennon": 4,
-  "sarah crawford": 1,
-  "oliver hoey": 2,
-  "ronan walsh": 3,
-  "ross o reilly": 4,
-  "joseph dowler": 1,
-  "ashling turley": 2,
-  "cian purcell": 3,
-  "cormac farrell": 4,
-  "damian mcgourty": 1,
-  "earle doyle": 2,
-  "michael mcnally": 3,
-  "niall lawless": 4,
-  "aaron ocallaghan": 1,
-  "john whittaker": 2,
-  "sean boylan": 3,
-  "darren meenagh": 4,
-  "adam valla": 1,
-  "sean lenehan": 2,
-  "fergal hickey": 3,
-  "caoimhe halpin": 4,
-  "martin bynne": 1,
-  "james doherty": 2,
-  "niamh russell": 3,
-  "thomaskutty kooplikattayil": 4,
-  "michael whyms": 1,
-  "emmet mckay": 2,
-  "niall moran": 3,
-  "oisín gartlan": 4,
-  "larry bergin": 1,
-  "liam mc grane": 2,
-  "david storey": 3,
-  "jackie bedford": 4,
-  "keith purcell": 1
-};
-
-function getGCforEntry(entryName, worldData, fixtureData){
-  const player = worldData.find(p=>p.name.toLowerCase()===entryName.toLowerCase());
-  if(!player||!player.teams.length) return 0;
-  // Build goals conceded map from fixtures
-  const gcMap={};
-  fixtureData.filter(f=>f.played&&!f.isKO).forEach(f=>{
-    if(!gcMap[f.home]) gcMap[f.home]=0;
-    if(!gcMap[f.away]) gcMap[f.away]=0;
-    gcMap[f.home]+=f.awayGoals;
-    gcMap[f.away]+=f.homeGoals;
-  });
-  fixtureData.filter(f=>f.played&&f.isKO).forEach(f=>{
-    if(!gcMap[f.home]) gcMap[f.home]=0;
-    if(!gcMap[f.away]) gcMap[f.away]=0;
-    gcMap[f.home]+=f.awayGoals;
-    gcMap[f.away]+=f.homeGoals;
-  });
-  return player.teams.reduce((sum,t)=>sum+(gcMap[t]||gcMap[abbr(t)]||0),0);
-}
-
-function getTeamGC(teamName, fixtureData){
-  const gcMap={};
-  fixtureData.filter(f=>f.played).forEach(f=>{
-    if(!gcMap[f.home]) gcMap[f.home]=0;
-    if(!gcMap[f.away]) gcMap[f.away]=0;
-    gcMap[f.home]+=f.awayGoals;
-    gcMap[f.away]+=f.homeGoals;
-  });
-  return gcMap[teamName]||gcMap[abbr(teamName)]||0;
-}
-
-function renderBonus(){
-  if(!allEntries.length||!allFixtures.length) return;
-  const grid=document.getElementById('bonus-grid');
-
-  // Assign groups
-  const groups={1:[],2:[],3:[],4:[]};
-  allEntries.forEach(e=>{
-    if(!e.name||/^[a-zA-Z]$/.test(e.name.trim())) return;
-    const grp=BONUS_GROUPS[e.name.toLowerCase()]||4;
-    const gc=getGCforEntry(e.name,allWorldData,allFixtures);
-    groups[grp].push({...e,gc});
-  });
-
-  // Sort each group by gc desc
-  Object.values(groups).forEach(g=>g.sort((a,b)=>b.gc-a.gc));
-
-  grid.innerHTML=Object.entries(groups).map(([grp,members])=>{
-    if(!members.length) return '';
-    const rows=members.map((e,i)=>{
-      const rowClass=i===0?'rank-row-1':i===1?'rank-row-2':i===2?'rank-row-3':'';
-      return `<tr class="${rowClass}" onclick="openBonusModal(${JSON.stringify(e).replace(/'/g,"&#39;")})">
-        <td><div class="rank-wrap"><span class="rank-num">${i+1}</span></div></td>
-        <td class="name-cell" style="cursor:pointer">${e.name}</td>
-        <td style="text-align:right;font-size:15px;font-weight:700">${e.gc}</td>
-      </tr>`;
-    }).join('');
-    return `<div class="gs-card">
-      <div class="gs-card-header">Group ${grp}</div>
-      <table class="gs-table" style="width:100%;border-collapse:collapse;font-size:14px">
-        <thead><tr>
-          <th style="width:36px;padding:8px;background:#f0f7f0;color:#5a7a5a;font-size:11px;text-transform:uppercase;border-bottom:1px solid #d4e8d4">#</th>
-          <th style="padding:8px;background:#f0f7f0;color:#5a7a5a;font-size:11px;text-transform:uppercase;border-bottom:1px solid #d4e8d4;text-align:left">Name</th>
-          <th style="padding:8px;background:#f0f7f0;color:#5a7a5a;font-size:11px;text-transform:uppercase;border-bottom:1px solid #d4e8d4;text-align:right">GC</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-  }).join('');
-}
-
-// Bonus modal
-function openBonusModal(entry){
-  const player=allWorldData.find(p=>p.name.toLowerCase()===entry.name.toLowerCase());
-  document.getElementById('modal-name').textContent=entry.name;
-  document.getElementById('modal-rank').textContent='Goals Conceded: '+entry.gc;
-  document.getElementById('modal-goals').textContent=entry.gc;
-  document.getElementById('modal-goals-label') && (document.getElementById('modal-goals-label').textContent='goals conceded');
-  document.getElementById('modal').classList.add('open');
-  const teamsEl=document.getElementById('modal-teams');
-  if(!player||!player.teams.length){
-    teamsEl.innerHTML=`<div class="modal-loading" style="grid-column:1/-1">Teams not assigned</div>`;
-    return;
-  }
-  const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
-  teamsEl.innerHTML=player.teams.map((t,i)=>{
-    const gc=getTeamGC(t,allFixtures);
-    return `<div class="team-card">
-      <div class="pot-label">${potLabels[i]||''}</div>
-      <div class="team-name">${flag(t)} ${t}</div>
-      <div style="font-size:11px;color:#e53935;font-weight:700;margin-top:2px">${gc} conceded</div>
-    </div>`;
-  }).join('');
-}
-
-// ── Bonus group draw (fixed seed 2026) ──────────────────────────────
 async function loadAll(){
   try{
     const bust='&cachebust='+Date.now();
@@ -533,7 +344,7 @@ async function loadAll(){
     if(sR.ok) allEntries=parseStandings(await sR.text());
     if(fR.ok) allFixtures=parseFixtures(await fR.text());
     if(wR.ok) allWorldData=parseWorld(await wR.text());
-    renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
+    renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries();
     document.getElementById('updated-tag').textContent=
       'Updated '+new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
