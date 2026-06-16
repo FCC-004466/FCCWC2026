@@ -17,7 +17,8 @@
   .trophy-emoji { font-size: 44px; line-height: 1; }
   .header-titles h1 { font-size: clamp(22px, 5vw, 36px); font-family: 'Bebas Neue', sans-serif; font-weight: 400; color: #fff; line-height: 1.1; letter-spacing: 1px; }
   .header-titles p { font-size: 12px; color: #a5c8a5; margin-top: 2px; }
-  .nav-tabs { display: flex; justify-content: center; gap: 4px; padding: 0 1rem; margin-top: 0.6rem; }
+  .nav-tabs { display: flex; justify-content: center; gap: 4px; padding: 0 1rem; margin-top: 0.6rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; }
+  .nav-tabs::-webkit-scrollbar { display: none; }
   .nav-tab { padding: 9px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px 8px 0 0; cursor: pointer; background: #0f3010; color: #7aaa7a; transition: background 0.15s, color 0.15s; white-space: nowrap; }
   .nav-tab.active { background: #f4f7f4; color: #1a4a1a; }
   .nav-tab:hover:not(.active) { background: #1a5a1a; color: #b0d8b0; }
@@ -52,10 +53,9 @@
   thead th:hover, thead th.sorted { color: #2e7d32; }
   tbody tr { border-bottom: 1px solid #e0ede0; transition: background 0.1s; cursor: pointer; }
   tbody tr:hover { background: #e8f5e9; }
-  tbody tr.rank-row-1 { background: #fffde7; border-left: 3px solid #ffd700; }
-  tbody tr.rank-row-2 { background: #e8f5e9; border-left: 3px solid #2e7d32; }
-  tbody tr.rank-row-3 { background: #f0f9f0; border-left: 3px solid #66bb6a; }
-  tbody tr.rank-row-4 { background: #f5fbf5; border-left: 3px solid #a5d6a7; }
+  tbody tr.rank-row-1 { background: #e8f5e9; border-left: 3px solid #2e7d32; }
+  tbody tr.rank-row-2 { background: #f0f9f0; border-left: 3px solid #66bb6a; }
+  tbody tr.rank-row-3 { background: #f5fbf5; border-left: 3px solid #a5d6a7; }
   tbody tr.rank-row-last { background: #fff8e1; border-left: 3px solid #ffd54f; }
   tbody td { padding: 10px 8px; vertical-align: middle; }
   .rank-wrap { display: flex; align-items: center; justify-content: center; width: 28px; }
@@ -88,10 +88,6 @@
   /* All entries */
   .entry-card { background: #fff; border: 1px solid #d4e8d4; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
   .entry-card-header { background: #f0f7f0; border-bottom: 1px solid #d4e8d4; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
-  .entry-card.rank-1 .entry-card-header { background: #fffde7; border-left: 3px solid #ffd700; }
-  .entry-card.rank-2 .entry-card-header { background: #e8f5e9; border-left: 3px solid #2e7d32; }
-  .entry-card.rank-3 .entry-card-header { background: #f0f9f0; border-left: 3px solid #66bb6a; }
-  .entry-card.rank-4 .entry-card-header { background: #f5fbf5; border-left: 3px solid #a5d6a7; }
   .entry-card-header .e-name { font-weight: 700; font-size: 14px; color: #1a2e1a; }
   .entry-card-header .e-rank { font-size: 12px; color: #5a7a5a; }
   .entry-card-header .e-goals { font-size: 15px; font-weight: 700; color: #2e7d32; }
@@ -177,6 +173,7 @@
     <button class="nav-tab" onclick="showPage('entries',this)">👥 All Entries</button>
     <button class="nav-tab" onclick="showPage('fixtures',this)">📅 Fixtures</button>
     <button class="nav-tab" onclick="showPage('groups',this)">📊 Groups</button>
+    <button class="nav-tab" onclick="showPage('bonus',this)">🎯 Bonus</button>
   </div>
 </header>
 
@@ -257,6 +254,21 @@
   </div>
 </div>
 
+<!-- BONUS PAGE -->
+<div id="page-bonus" class="page">
+  <div class="controls">
+    <div class="controls-inner">
+      <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      <span style="font-size:12px;color:#8aaa8a">Ranked by goals conceded · Click name to see teams</span>
+    </div>
+  </div>
+  <div class="content-wrap-wide">
+    <div id="bonus-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:0.75rem">
+      <div class="state-div"><span class="spinner"></span> Loading…</div>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div style="margin-bottom:6px;font-size:12px;color:#5a7a5a;font-weight:600">FCC World Cup Buster 2026 · Live data · Auto-refreshes every 5 mins</div>
   <div style="font-size:11px;color:#8aaa8a;max-width:600px;margin:0 auto;line-height:1.6">
@@ -293,7 +305,7 @@ const ISO = {
   'Turkey':'tr','Turkiye':'tr','Türkiye':'tr','Bosnia':'ba','Bosnia and Herzegovina':'ba',
   'Sweden':'se','Czechia':'cz','Iraq':'iq','Ghana':'gh',
   'Cape Verde':'cv','C Verde':'cv','Cabo Verde':'cv','Haiti':'ht',
-  'Curacao':'cw','Congo':'cd','DR Congo':'cd','DR Congo':'cd','New Zealand':'nz',
+  'Curacao':'cw','Congo':'cg','DR Congo':'cd','New Zealand':'nz',
   'NZ':'nz','Jordan':'jo','Jordon':'jo','Qatar':'qa','Quatar':'qa',
   'Serbia':'rs','Ukraine':'ua','Poland':'pl','Wales':'gb-wls',
   'Venezuela':'ve','Chile':'cl','Peru':'pe','Honduras':'hn',
@@ -333,6 +345,136 @@ function showPage(name,btn){
   btn.classList.add('active');
 }
 
+
+// ── Bonus tab (goals conceded) ─────────────────────────────────────
+const BONUS_GROUPS = {
+  "judy o neill": 1,
+  "peter connell": 2,
+  "ciaran brennan": 3,
+  "dylan haughton": 4,
+  "donal moriarty": 1,
+  "damian ryan": 2,
+  "karen leeson": 3,
+  "adam christie": 4,
+  "kieran maher": 1,
+  "gary o connor": 2,
+  "patrick wallace": 3,
+  "warren o hare": 4,
+  "alan o toole": 1,
+  "bill mooney": 2,
+  "benny farren": 3,
+  "breen doris": 4,
+  "sean t guinan": 1,
+  "colin mc caffery": 2,
+  "kevin broderick": 3,
+  "james lee": 4,
+  "robert mahony": 1,
+  "shane swift": 2,
+  "peter boyd": 3,
+  "niall mc dermott": 4,
+  "catherine mahon": 1,
+  "declan cooney": 2,
+  "leon leonard": 3,
+  "orlaith maleady": 4,
+  "aaron smith": 1,
+  "jack tynan": 2,
+  "elaine tobin": 3,
+  "james culhane": 4,
+  "mick tynan": 1,
+  "rory little": 2,
+  "quintan greally": 3,
+  "stephen byrne": 4,
+  "stephen mchugh": 1,
+  "gerald curley": 2,
+  "william murray": 3,
+  "gary glennon": 4,
+  "sarah crawford": 1,
+  "oliver hoey": 2,
+  "ronan walsh": 3,
+  "ross o reilly": 4,
+  "joseph dowler": 1,
+  "ashling turley": 2,
+  "cian purcell": 3,
+  "cormac farrell": 4,
+  "damian mcgourty": 1,
+  "earle doyle": 2,
+  "michael mcnally": 3,
+  "niall lawless": 4,
+  "aaron ocallaghan": 1,
+  "john whittaker": 2,
+  "sean boylan": 3,
+  "darren meenagh": 4,
+  "adam valla": 1,
+  "sean lenehan": 2,
+  "fergal hickey": 3,
+  "caoimhe halpin": 4,
+  "martin bynne": 1,
+  "james doherty": 2,
+  "niamh russell": 3,
+  "thomaskutty kooplikattayil": 4,
+  "michael whyms": 1,
+  "emmet mckay": 2,
+  "niall moran": 3,
+  "oisín gartlan": 4,
+  "larry bergin": 1,
+  "liam mc grane": 2,
+  "david storey": 3,
+  "jackie bedford": 4,
+  "keith purcell": 1
+};
+
+function getTeamGC(teamName){
+  const gcMap={};
+  allFixtures.filter(f=>f.played).forEach(f=>{
+    if(!gcMap[f.home]) gcMap[f.home]=0;
+    if(!gcMap[f.away]) gcMap[f.away]=0;
+    gcMap[f.home]+=f.awayGoals;
+    gcMap[f.away]+=f.homeGoals;
+  });
+  return gcMap[teamName]||0;
+}
+
+function getEntryGC(entryName){
+  const player=allWorldData.find(p=>p.name.toLowerCase()===entryName.toLowerCase());
+  if(!player||!player.teams.length) return 0;
+  return player.teams.reduce((sum,t)=>sum+getTeamGC(t),0);
+}
+
+function renderBonus(){
+  const grid=document.getElementById('bonus-grid');
+  if(!grid||!allEntries.length) return;
+  const groups={1:[],2:[],3:[],4:[]};
+  allEntries.forEach(e=>{
+    if(!e.name||e.name.trim().length<=1) return;
+    const grp=BONUS_GROUPS[e.name.toLowerCase()]||4;
+    groups[grp].push({...e,gc:getEntryGC(e.name)});
+  });
+  Object.values(groups).forEach(g=>g.sort((a,b)=>b.gc-a.gc));
+  grid.innerHTML=Object.entries(groups).map(([grp,members])=>{
+    if(!members.length) return '';
+    const rows=members.map((e,i)=>{
+      const rc=i===0?'rank-row-1':i===1?'rank-row-2':i===2?'rank-row-3':'';
+      return '<tr onclick=\'openBonusModal('+JSON.stringify(e).replace(/'/g,"&#39;")+')\'  class="'+rc+'" style="cursor:pointer;border-bottom:1px solid #e0ede0"><td style="padding:10px 8px;width:36px"><span class="rank-num">'+String(i+1)+'</span></td><td class="name-cell" style="padding:10px 8px">'+e.name+'</td><td style="padding:10px 8px;text-align:right;font-size:15px;font-weight:700;color:#e53935">'+String(e.gc)+'</td></tr>';
+    }).join('');
+    return '<div class="gs-card" style="margin-bottom:1rem"><div class="gs-card-header">Group '+grp+'</div><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr><th style="width:36px;padding:8px;background:#f0f7f0;color:#5a7a5a;font-size:11px;text-transform:uppercase;border-bottom:1px solid #d4e8d4">#</th><th style="padding:8px;background:#f0f7f0;color:#5a7a5a;font-size:11px;text-transform:uppercase;border-bottom:1px solid #d4e8d4;text-align:left">Name</th><th style="padding:8px;background:#f0f7f0;color:#5a7a5a;font-size:11px;text-transform:uppercase;border-bottom:1px solid #d4e8d4;text-align:right">GC</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).join('');
+}
+
+function openBonusModal(entry){
+  document.getElementById('modal-name').textContent=entry.name;
+  document.getElementById('modal-rank').textContent='Goals Conceded: '+entry.gc;
+  document.getElementById('modal-goals').textContent=entry.gc;
+  document.getElementById('modal').classList.add('open');
+  const player=allWorldData.find(p=>p.name.toLowerCase()===entry.name.toLowerCase());
+  const teamsEl=document.getElementById('modal-teams');
+  if(!player||!player.teams.length){teamsEl.innerHTML='<div class="modal-loading" style="grid-column:1/-1">Teams not assigned</div>';return;}
+  const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
+  teamsEl.innerHTML=player.teams.map(function(t,i){
+    const gc=getTeamGC(t);
+    return '<div class="team-card"><div class="pot-label">'+potLabels[i]+'</div><div class="team-name">'+flag(t)+' '+t+'</div><div style="font-size:11px;color:#e53935;font-weight:700;margin-top:2px">'+gc+' conceded</div></div>';
+  }).join('');
+}
+
 async function loadAll(){
   try{
     const bust='&cachebust='+Date.now();
@@ -344,7 +486,7 @@ async function loadAll(){
     if(sR.ok) allEntries=parseStandings(await sR.text());
     if(fR.ok) allFixtures=parseFixtures(await fR.text());
     if(wR.ok) allWorldData=parseWorld(await wR.text());
-    renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries();
+    renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
     document.getElementById('updated-tag').textContent=
       'Updated '+new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
@@ -437,14 +579,13 @@ function parseWorld(csv){
       if(!match) return;
       // Already found this person?
       if(participants.find(p=>p.name.toLowerCase()===val.toLowerCase())) return;
-      const teams=[], teamGoals=[];
+      const teams=[];
       for(let tr=r+1;tr<Math.min(r+12,grid.length)&&teams.length<8;tr++){
         const tv=(grid[tr][c]||'').replace(/[\r\n\t]/g,'').trim();
-        const gv=(grid[tr][c+1]||'').replace(/[\r\n\t]/g,'').trim();
         if(!tv||tv==='Total'||tv==='Goals'||/^\d+$/.test(tv)) continue;
-        if(/[a-zA-Z]/.test(tv)){ teams.push(tv); teamGoals.push(parseFloat(gv)||0); }
+        if(/[a-zA-Z]/.test(tv)) teams.push(tv);
       }
-      if(teams.length>0) participants.push({name:val,teams,teamGoals});
+      if(teams.length>0) participants.push({name:val,teams});
     });
   }
   return participants;
@@ -531,7 +672,6 @@ function openModal(entry){
     <div class="team-card">
       <div class="pot-label">${potLabels[i]||''}</div>
       <div class="team-name">${flag(t)} ${t}</div>
-      <div style="font-size:11px;color:#2e7d32;font-weight:700;margin-top:2px">${player.teamGoals?player.teamGoals[i]||0:0} goals</div>
     </div>`).join('');
 }
 function closeModal(e){if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
@@ -557,7 +697,7 @@ function renderLeaderboard(){
     const ip=/^[a-zA-Z]$/.test(e.name.trim())||e.name.trim().length<=1;
     const lastRk=allEntries.length?allEntries[allEntries.length-1].rank:0;
     const rankEl=e.rank===1?`<span class="rank-1">1</span>`:e.rank===2?`<span class="rank-2">2</span>`:e.rank===3?`<span class="rank-3">3</span>`:`<span class="rank-num">${e.rank}</span>`;
-    const rowClass=e.rank===1?'rank-row-1':e.rank===2?'rank-row-2':e.rank===3?'rank-row-3':e.rank===4?'rank-row-4':e.rank===lastRk?'rank-row-last':'';
+    const rowClass=e.rank===1?'rank-row-1':e.rank===2?'rank-row-2':e.rank===3?'rank-row-3':e.rank===lastRk?'rank-row-last':'';
     return `<tr onclick='openModal(${JSON.stringify(e).replace(/'/g,"&#39;")})' class="${rowClass}">
       <td><div class="rank-wrap">${rankEl}</div></td>
       <td class="name-cell ${ip?'placeholder':''}">${e.name}</td>
@@ -577,9 +717,8 @@ function renderEntries(){
     const teamsHtml=player&&player.teams.length
       ?player.teams.map((t,i)=>`<div class="entry-team"><span class="pot">${potLabels[i]}</span>${flag(t)} ${t}</div>`).join('')
       :`<div class="entry-team" style="grid-column:1/-1;color:#8aaa8a">Teams not yet assigned</div>`;
-    const rankEl='#'+e.rank;
-    const rankClass=e.rank===1?'rank-1':e.rank===2?'rank-2':e.rank===3?'rank-3':e.rank===4?'rank-4':'';
-    return `<div class="entry-card ${rankClass}">
+    const rankEl=e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'#'+e.rank;
+    return `<div class="entry-card">
       <div class="entry-card-header">
         <div><span class="e-name">${e.name}</span><span class="e-rank"> · ${rankEl}</span></div>
         <span class="e-goals">${e.goals} goals</span>
