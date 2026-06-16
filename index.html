@@ -17,8 +17,8 @@
   .trophy-emoji { font-size: 44px; line-height: 1; }
   .header-titles h1 { font-size: clamp(22px, 5vw, 36px); font-family: 'Bebas Neue', sans-serif; font-weight: 400; color: #fff; line-height: 1.1; letter-spacing: 1px; }
   .header-titles p { font-size: 12px; color: #a5c8a5; margin-top: 2px; }
-  .nav-tabs { display: flex; justify-content: center; gap: 4px; padding: 0 1rem; margin-top: 0.6rem; }
-  .nav-tab { padding: 9px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px 8px 0 0; cursor: pointer; background: #0f3010; color: #7aaa7a; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+  .nav-tabs { display: flex; justify-content: center; gap: 2px; padding: 0 1rem; margin-top: 0.6rem; }
+  .nav-tab { padding: 6px 9px; font-size: 11px; font-weight: 600; border: none; border-radius: 8px 8px 0 0; cursor: pointer; background: #0f3010; color: #7aaa7a; transition: background 0.15s, color 0.15s; white-space: nowrap; }
   .nav-tab.active { background: #f4f7f4; color: #1a4a1a; }
   .nav-tab:hover:not(.active) { background: #1a5a1a; color: #b0d8b0; }
 
@@ -174,7 +174,7 @@
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('leaderboard',this)">🏆 Standings</button>
-    <button class="nav-tab" onclick="showPage('entries',this)">👥 All Entries</button>
+    <button class="nav-tab" onclick="showPage('entries',this)">👥 Entries</button>
     <button class="nav-tab" onclick="showPage('fixtures',this)">📅 Fixtures</button>
     <button class="nav-tab" onclick="showPage('groups',this)">📊 Groups</button>
     <button class="nav-tab" onclick="showPage('bonus',this)">🎯 Bonus</button>
@@ -447,6 +447,7 @@ function getGCforEntry(entryName, worldData, fixtureData){
 }
 
 function getTeamGC(teamName, fixtureData){
+  if(!fixtureData) fixtureData=allFixtures;
   const gcMap={};
   fixtureData.filter(f=>f.played).forEach(f=>{
     if(!gcMap[f.home]) gcMap[f.home]=0;
@@ -476,7 +477,7 @@ function renderBonus(){
   grid.innerHTML=Object.entries(groups).map(([grp,members])=>{
     if(!members.length) return '';
     const rows=members.map((e,i)=>{
-      const rowClass=i===0?'rank-row-1':i===1?'rank-row-2':i===2?'rank-row-3':'';
+      const rowClass=i===0?'rank-row-1':'';
       return `<tr class="${rowClass}" onclick="openBonusModal(${JSON.stringify(e).replace(/'/g,"&#39;")})">
         <td><div class="rank-wrap"><span class="rank-num">${i+1}</span></div></td>
         <td class="name-cell" style="cursor:pointer">${e.name}</td>
@@ -512,7 +513,7 @@ function openBonusModal(entry){
   }
   const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
   teamsEl.innerHTML=player.teams.map((t,i)=>{
-    const gc=getTeamGC(t,allFixtures);
+    const gc=getTeamGC(t);
     return `<div class="team-card">
       <div class="pot-label">${potLabels[i]||''}</div>
       <div class="team-name">${flag(t)} ${t}</div>
