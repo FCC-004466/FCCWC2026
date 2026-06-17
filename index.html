@@ -429,21 +429,7 @@ const BONUS_GROUPS = {
 function getGCforEntry(entryName, worldData, fixtureData){
   const player = worldData.find(p=>p.name.toLowerCase()===entryName.toLowerCase());
   if(!player||!player.teams.length) return 0;
-  // Build goals conceded map from fixtures
-  const gcMap={};
-  fixtureData.filter(f=>f.played&&!f.isKO).forEach(f=>{
-    if(!gcMap[f.home]) gcMap[f.home]=0;
-    if(!gcMap[f.away]) gcMap[f.away]=0;
-    gcMap[f.home]+=f.awayGoals;
-    gcMap[f.away]+=f.homeGoals;
-  });
-  fixtureData.filter(f=>f.played&&f.isKO).forEach(f=>{
-    if(!gcMap[f.home]) gcMap[f.home]=0;
-    if(!gcMap[f.away]) gcMap[f.away]=0;
-    gcMap[f.home]+=f.awayGoals;
-    gcMap[f.away]+=f.homeGoals;
-  });
-  return player.teams.reduce((sum,t)=>sum+(gcMap[t]||gcMap[abbr(t)]||0),0);
+  return player.teams.reduce((sum,t)=>sum+getTeamGC(t,fixtureData),0);
 }
 
 // Aliases for teams that appear under different names in different sheets
