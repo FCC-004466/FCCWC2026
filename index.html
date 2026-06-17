@@ -455,7 +455,12 @@ function getTeamGC(teamName, fixtureData){
     gcMap[f.home]+=f.awayGoals;
     gcMap[f.away]+=f.homeGoals;
   });
-  return gcMap[teamName]||gcMap[abbr(teamName)]||0;
+  // Try exact match, then abbreviation, then case-insensitive match across all keys
+  if(gcMap[teamName]!==undefined) return gcMap[teamName];
+  if(gcMap[abbr(teamName)]!==undefined) return gcMap[abbr(teamName)];
+  const lower=teamName.toLowerCase();
+  const key=Object.keys(gcMap).find(k=>k.toLowerCase()===lower||abbr(k).toLowerCase()===lower);
+  return key?gcMap[key]:0;
 }
 
 function renderBonus(){
