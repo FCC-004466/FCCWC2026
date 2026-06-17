@@ -446,6 +446,18 @@ function getGCforEntry(entryName, worldData, fixtureData){
   return player.teams.reduce((sum,t)=>sum+(gcMap[t]||gcMap[abbr(t)]||0),0);
 }
 
+// Aliases for teams that appear under different names in different sheets
+const TEAM_ALIASES = {
+  'south korea':'korea republic','korea republic':'south korea','s korea':'korea republic',
+  'usa':'united states','united states':'usa',
+  'ivory coast':"cote d'voire","cote d'voire":'ivory coast',"cote d'ivoire":'ivory coast',
+  'bosnia':'bosnia and herzegovina','bosnia and herzegovina':'bosnia',
+  'turkey':'türkiye','türkiye':'turkey','turkiye':'turkey',
+  'dr congo':'congo','congo':'dr congo',
+  'cabo verde':'cape verde','cape verde':'cabo verde','c verde':'cape verde',
+  'saudi arabia':'s arabia','s arabia':'saudi arabia',
+  'new zealand':'nz','nz':'new zealand'
+};
 function getTeamGC(teamName, fixtureData){
   if(!fixtureData) fixtureData=allFixtures;
   const gcMap={};
@@ -455,12 +467,18 @@ function getTeamGC(teamName, fixtureData){
     gcMap[f.home]+=f.awayGoals;
     gcMap[f.away]+=f.homeGoals;
   });
-  // Try exact match, then abbreviation, then case-insensitive match across all keys
   if(gcMap[teamName]!==undefined) return gcMap[teamName];
   if(gcMap[abbr(teamName)]!==undefined) return gcMap[abbr(teamName)];
   const lower=teamName.toLowerCase();
-  const key=Object.keys(gcMap).find(k=>k.toLowerCase()===lower||abbr(k).toLowerCase()===lower);
-  return key?gcMap[key]:0;
+  let key=Object.keys(gcMap).find(k=>k.toLowerCase()===lower||abbr(k).toLowerCase()===lower);
+  if(key) return gcMap[key];
+  // Try alias lookup
+  const alias=TEAM_ALIASES[lower];
+  if(alias){
+    key=Object.keys(gcMap).find(k=>k.toLowerCase()===alias);
+    if(key) return gcMap[key];
+  }
+  return 0;
 }
 
 function renderBonus(){
