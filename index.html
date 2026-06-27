@@ -105,6 +105,9 @@
   .section-block { margin-bottom: 1.5rem; }
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #2e7d32; padding: 10px 4px 6px; border-bottom: 2px solid #2e7d32; margin-bottom: 2px; }
   .fixture-row { display: grid; grid-template-columns: 1fr 80px 1fr; align-items: center; gap: 6px; padding: 8px 4px; border-bottom: 1px solid #e0ede0; }
+  .fixture-row-flat { display: grid; grid-template-columns: 64px 1fr 72px 1fr; align-items: center; gap: 6px; padding: 8px 4px; border-bottom: none; }
+  .fix-date-col { font-size: 10px; color: #6a8a6a; font-weight: 600; line-height: 1.3; text-align: left; }
+  .fix-group-inline { display: block; font-size: 9px; color: #8aaa8a; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
   .fixture-row:hover { background: #e8f5e9; }
   .home-name { text-align: right; font-weight: 600; font-size: 13px; color: #1a2e1a; word-break: break-word; }
   .away-name { text-align: left; font-weight: 600; font-size: 13px; color: #1a2e1a; word-break: break-word; }
@@ -802,33 +805,25 @@ function renderFixtures(){
     return true;
   });
   if(!data.length){document.getElementById('fixtures-wrap').innerHTML=`<div class="state-div">No matches found.</div>`;return;}
-  const dateMap={},dateOrder=[];
-  data.forEach(f=>{
-    const key=f.irish?f.irish.dateKey:'unknown';
-    const label=f.irish?f.irish.dateLabel:'Date TBC';
-    if(!dateMap[key]){dateMap[key]={label,matches:[]};dateOrder.push(key);}
-    dateMap[key].matches.push(f);
-  });
-  document.getElementById('fixtures-wrap').innerHTML=dateOrder.map(dk=>{
-    const{label,matches}=dateMap[dk];
-    const rows=matches.map(f=>{
-      const groupTag=f.groupLetter?`<span class="fix-group">Grp ${f.groupLetter}</span>`:(f.koRound?`<span class="fix-group">${f.koRound}</span>`:'');
-      const hf=flag(f.home),af=flag(f.away);
-      const scoreEl=f.played
-        ?`<div class="score-box ${f.isKO?'ko':''}"><span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span></div>`
-        :`<div class="score-box upcoming">${f.irish?f.irish.timeStr:'TBC'}</div>`;
-      const venueEl=f.venue?`<div class="fix-venue">${f.venue}</div>`:'';
-      return `<div class="fixture-block">
-        <div class="fixture-row">
-          <div class="home-name">${abbr(f.home)} ${hf}</div>
-          <div class="score-col">${groupTag}${scoreEl}</div>
-          <div class="away-name">${af} ${abbr(f.away)}</div>
-        </div>
-        ${venueEl}
-      </div>`;
-    }).join('');
-    return `<div class="section-block"><div class="section-label">${label} </div>${rows}</div>`;
+  const rows=data.map(f=>{
+    const dateLabel=f.irish?f.irish.dateLabel:'TBC';
+    const groupTag=f.groupLetter?`Grp ${f.groupLetter}`:(f.koRound?f.koRound:'');
+    const hf=flag(f.home),af=flag(f.away);
+    const scoreEl=f.played
+      ?`<div class="score-box ${f.isKO?'ko':''}"><span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span></div>`
+      :`<div class="score-box upcoming">${f.irish?f.irish.timeStr:'TBC'}</div>`;
+    const venueEl=f.venue?`<div class="fix-venue">${f.venue}</div>`:'';
+    return `<div class="fixture-block">
+      <div class="fixture-row fixture-row-flat">
+        <div class="fix-date-col">${dateLabel}<span class="fix-group-inline">${groupTag}</span></div>
+        <div class="home-name">${abbr(f.home)} ${hf}</div>
+        ${scoreEl}
+        <div class="away-name">${af} ${abbr(f.away)}</div>
+      </div>
+      ${venueEl}
+    </div>`;
   }).join('');
+  document.getElementById('fixtures-wrap').innerHTML=rows;
 }
 
 // ── Render groups ────────────────────────────────────────────────────
