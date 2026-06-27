@@ -140,8 +140,8 @@
   .bracket-cols { display: flex; gap: 18px; padding: 0.5rem 0.25rem; }
   .bracket-col { display: flex; flex-direction: column; min-width: 150px; }
   .bracket-col-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #2e7d32; text-align: center; padding-bottom: 6px; border-bottom: 2px solid #2e7d32; margin-bottom: 8px; }
-  .bracket-col-matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 14px; }
-  .bracket-match { background: #fff; border: 1px solid #d4e8d4; border-radius: 7px; overflow: hidden; }
+  .bracket-col-matches { position: relative; }
+  .bracket-match { background: #fff; border: 1px solid #d4e8d4; border-radius: 7px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
   .bracket-team { display: flex; align-items: center; gap: 5px; padding: 5px 7px; font-size: 11px; font-weight: 600; color: #4a6a4a; border-bottom: 1px solid #eef5ee; }
   .bracket-team:last-child { border-bottom: none; }
   .bracket-team.bracket-winner { color: #1a2e1a; background: #f0f9f0; font-weight: 700; }
@@ -878,27 +878,52 @@ function renderBracket(){
   if(!wrap) return;
   const koMatches=allFixtures.filter(f=>f.isKO&&f.koRound&&f.koRound!=='3rd').sort((a,b)=>a.matchNum-b.matchNum);
   if(!koMatches.length){wrap.innerHTML='<div class="state-div">Bracket not available yet.</div>';return;}
-  const rounds=KO_ORDER.filter(r=>r!=='3rd');
+  const rounds=KO_ORDER.filter(r=>r!=='3rd').filter(r=>koMatches.some(f=>f.koRound===r));
   const byRound={};
   rounds.forEach(r=>byRound[r]=koMatches.filter(f=>f.koRound===r));
-  wrap.innerHTML=`<div class="bracket-scroll"><div class="bracket-cols">`+
-    rounds.filter(r=>byRound[r].length).map(r=>{
-      const matches=byRound[r].map(f=>{
-        const hWin=f.played&&f.homeGoals>f.awayGoals;
-        const aWin=f.played&&f.awayGoals>f.homeGoals;
-        const hScore=f.played?f.homeGoals:'';
-        const aScore=f.played?f.awayGoals:'';
-        return `<div class="bracket-match">
-          <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${flag(f.home)}</span><span class="bracket-name">${abbr(f.home)||'TBC'}</span><span class="bracket-score">${hScore}</span></div>
-          <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${flag(f.away)}</span><span class="bracket-name">${abbr(f.away)||'TBC'}</span><span class="bracket-score">${aScore}</span></div>
-        </div>`;
-      }).join('');
-      return `<div class="bracket-col">
-        <div class="bracket-col-header">${KO_LABEL[r]}</div>
-        <div class="bracket-col-matches">${matches}</div>
+
+  const MATCH_H=52, GAP_BASE=14; // base match height and gap at the first round
+  // Compute vertical center positions per round: first round evenly spaced,
+  // each later round's match centered between the pair of matches that feed it.
+  const centers={}; // centers[round][index] = y-center in px
+  const firstRound=rounds[0];
+  const firstCount=byRound[firstRound].length;
+  centers[firstRound]=[];
+  for(let i=0;i<firstCount;i++){
+    centers[firstRound].push(i*(MATCH_H+GAP_BASE)+MATCH_H/2);
+  }
+  for(let r=1;r<rounds.length;r++){
+    const prevRound=rounds[r-1];
+    const prevCenters=centers[prevRound];
+    const count=byRound[rounds[r]].length;
+    centers[rounds[r]]=[];
+    for(let i=0;i<count;i++){
+      const a=prevCenters[i*2], b=prevCenters[i*2+1];
+      const mid=(b!==undefined)?(a+b)/2:a;
+      centers[rounds[r]].push(mid);
+    }
+  }
+  const totalHeight=Math.max(...centers[firstRound])+MATCH_H/2+10;
+
+  const colsHtml=rounds.map(r=>{
+    const matches=byRound[r].map((f,i)=>{
+      const hWin=f.played&&f.homeGoals>f.awayGoals;
+      const aWin=f.played&&f.awayGoals>f.homeGoals;
+      const hScore=f.played?f.homeGoals:'';
+      const aScore=f.played?f.awayGoals:'';
+      const top=centers[r][i]-MATCH_H/2;
+      return `<div class="bracket-match" style="position:absolute;top:${top}px;left:0;right:0;height:${MATCH_H}px">
+        <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${flag(f.home)}</span><span class="bracket-name">${abbr(f.home)||'TBC'}</span><span class="bracket-score">${hScore}</span></div>
+        <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${flag(f.away)}</span><span class="bracket-name">${abbr(f.away)||'TBC'}</span><span class="bracket-score">${aScore}</span></div>
       </div>`;
-    }).join('')
-    +`</div></div>`;
+    }).join('');
+    return `<div class="bracket-col">
+      <div class="bracket-col-header">${KO_LABEL[r]}</div>
+      <div class="bracket-col-matches" style="position:relative;height:${totalHeight}px">${matches}</div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML=`<div class="bracket-scroll"><div class="bracket-cols">${colsHtml}</div></div>`;
 }
 
 function renderGroups(){
