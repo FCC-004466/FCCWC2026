@@ -881,40 +881,64 @@ function renderBracket(){
   const rounds=KO_ORDER.filter(r=>r!=='3rd').filter(r=>koMatches.some(f=>f.koRound===r));
   const byRound={};
   rounds.forEach(r=>byRound[r]=koMatches.filter(f=>f.koRound===r));
+  const byMatchNum={};
+  koMatches.forEach(f=>byMatchNum[f.matchNum]=f);
 
-  const MATCH_H=52, GAP_BASE=14; // base match height and gap at the first round
-  // Compute vertical center positions per round: first round evenly spaced,
-  // each later round's match centered between the pair of matches that feed it.
-  const centers={}; // centers[round][index] = y-center in px
+  // Extract the feeder match number from text like "Match 74 Winner" / "Match 74 Loser"
+  function feederNum(text){
+    if(!text) return null;
+    const m=text.match(/Match\s+(\d+)/i);
+    return m?parseInt(m[1]):null;
+  }
+
+  const MATCH_H=52, GAP=14;
+  const centers={}; // centers[matchNum] = y-center in px
+
+  // First round (lowest round) gets fixed even spacing, ordered by match number
   const firstRound=rounds[0];
-  const firstCount=byRound[firstRound].length;
-  centers[firstRound]=[];
-  for(let i=0;i<firstCount;i++){
-    centers[firstRound].push(i*(MATCH_H+GAP_BASE)+MATCH_H/2);
-  }
+  byRound[firstRound].forEach((f,i)=>{
+    centers[f.matchNum]=i*(MATCH_H+GAP)+MATCH_H/2;
+  });
+
+  // Each subsequent round: position = midpoint of its real feeder matches (parsed from text),
+  // falling back to sequential pairing only if no feeder reference is found (e.g. 3rd-place qualifiers).
   for(let r=1;r<rounds.length;r++){
+    const round=rounds[r];
     const prevRound=rounds[r-1];
-    const prevCenters=centers[prevRound];
-    const count=byRound[rounds[r]].length;
-    centers[rounds[r]]=[];
-    for(let i=0;i<count;i++){
-      const a=prevCenters[i*2], b=prevCenters[i*2+1];
-      const mid=(b!==undefined)?(a+b)/2:a;
-      centers[rounds[r]].push(mid);
-    }
+    const matches=byRound[round];
+    matches.forEach((f,i)=>{
+      const homeFeed=feederNum(f.home), awayFeed=feederNum(f.away);
+      let a=homeFeed!=null?centers[homeFeed]:undefined;
+      let b=awayFeed!=null?centers[awayFeed]:undefined;
+      if(a===undefined&&b===undefined){
+        // Fallback: pair sequentially within previous round if no parsable feeder text
+        const prevMatches=byRound[prevRound];
+        a=centers[prevMatches[i*2]?.matchNum];
+        b=centers[prevMatches[i*2+1]?.matchNum];
+      }
+      if(a===undefined) a=b;
+      if(b===undefined) b=a;
+      centers[f.matchNum]=(a!==undefined&&b!==undefined)?(a+b)/2:(i*(MATCH_H+GAP)+MATCH_H/2);
+    });
   }
-  const totalHeight=Math.max(...centers[firstRound])+MATCH_H/2+10;
+
+  const allCenters=Object.values(centers);
+  const totalHeight=Math.max(...allCenters)+MATCH_H/2+10;
 
   const colsHtml=rounds.map(r=>{
-    const matches=byRound[r].map((f,i)=>{
+    const matches=byRound[r].map(f=>{
       const hWin=f.played&&f.homeGoals>f.awayGoals;
       const aWin=f.played&&f.awayGoals>f.homeGoals;
       const hScore=f.played?f.homeGoals:'';
       const aScore=f.played?f.awayGoals:'';
-      const top=centers[r][i]-MATCH_H/2;
+      const top=centers[f.matchNum]-MATCH_H/2;
+      const hName=feederNum(f.home)!=null?`Winner M${feederNum(f.home)}`:(abbr(f.home)||'TBC');
+      const aName=feederNum(f.away)!=null?`Winner M${feederNum(f.away)}`:(abbr(f.away)||'TBC');
+      const hFlagEl=feederNum(f.home)!=null?'':flag(f.home);
+      const aFlagEl=feederNum(f.away)!=null?'':flag(f.away);
       return `<div class="bracket-match" style="position:absolute;top:${top}px;left:0;right:0;height:${MATCH_H}px">
-        <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${flag(f.home)}</span><span class="bracket-name">${abbr(f.home)||'TBC'}</span><span class="bracket-score">${hScore}</span></div>
-        <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${flag(f.away)}</span><span class="bracket-name">${abbr(f.away)||'TBC'}</span><span class="bracket-score">${aScore}</span></div>
+        <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${hFlagEl}</span><span class="bracket-name">${hName}</span><span class="bracket-score">${hScore}</span></div>
+        <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${aFlagEl}</span><span class="bracket-name">${aName}</span><span class="bracket-score">${aScore}</span></div>
       </div>`;
     }).join('');
     return `<div class="bracket-col">
