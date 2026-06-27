@@ -108,6 +108,12 @@
   .fixture-row-flat { display: grid; grid-template-columns: 64px 1fr 72px 1fr; align-items: center; gap: 6px; padding: 8px 4px; border-bottom: none; }
   .fix-date-col { font-size: 10px; color: #6a8a6a; font-weight: 600; line-height: 1.3; text-align: left; }
   .fix-group-inline { display: block; font-size: 9px; color: #8aaa8a; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+  .fixture-block.is-played .fixture-row-flat { padding: 4px 4px; }
+  .fixture-block.is-played .home-name,
+  .fixture-block.is-played .away-name { font-size: 11px; font-weight: 500; color: #4a6a4a; }
+  .fixture-block.is-played .fix-date-col { font-size: 9px; }
+  .fixture-block.is-played .fix-group-inline { font-size: 8px; }
+  .fixture-block.is-played .score-box { font-size: 12px; padding: 2px 5px; }
   .fixture-row:hover { background: #e8f5e9; }
   .home-name { text-align: right; font-weight: 600; font-size: 13px; color: #1a2e1a; word-break: break-word; }
   .away-name { text-align: left; font-weight: 600; font-size: 13px; color: #1a2e1a; word-break: break-word; }
@@ -684,6 +690,7 @@ function buildIrish(dt){
 function parseFixtures(csv){
   const lines=csv.split('\n').map(l=>l.trim()).filter(Boolean);
   const fixtures=[];
+  let lastKoRound=null;
   for(let i=0;i<lines.length;i++){
     const c=splitCSV(lines[i]);
     const matchNum=parseInt(c[1]);
@@ -698,7 +705,10 @@ function parseFixtures(csv){
     const played=homeGoals!==null&&awayGoals!==null&&!isNaN(homeGoals)&&!isNaN(awayGoals);
     const isKO=matchNum>72;
     const groupLetter=/^[A-L]$/.test(raw)?raw:null;
-    const koRound=KO_ORDER.includes(raw)?raw:null;
+    if(isKO){
+      if(KO_ORDER.includes(raw)) lastKoRound=raw;
+    }
+    const koRound=isKO?lastKoRound:null;
     const roundLabel=isKO?(KO_LABEL[koRound]||'Knockout'):('Group '+groupLetter);
     const irish=parseNYtoIrish((c[3]||'').trim());
     const venueRaw=(c[16]||'').trim().replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim();
@@ -812,8 +822,8 @@ function renderFixtures(){
     const scoreEl=f.played
       ?`<div class="score-box ${f.isKO?'ko':''}"><span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span></div>`
       :`<div class="score-box upcoming">${f.irish?f.irish.timeStr:'TBC'}</div>`;
-    const venueEl=f.venue?`<div class="fix-venue">${f.venue}</div>`:'';
-    return `<div class="fixture-block">
+    const venueEl=(f.venue&&!f.played)?`<div class="fix-venue">${f.venue}</div>`:'';
+    return `<div class="fixture-block ${f.played?'is-played':''}">
       <div class="fixture-row fixture-row-flat">
         <div class="fix-date-col">${dateLabel}<span class="fix-group-inline">${groupTag}</span></div>
         <div class="home-name">${abbr(f.home)} ${hf}</div>
