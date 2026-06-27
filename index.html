@@ -104,10 +104,6 @@
   .fix-group { font-size: 9px; color: #8aaa8a; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
   .section-block { margin-bottom: 1.5rem; }
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #2e7d32; padding: 10px 4px 6px; border-bottom: 2px solid #2e7d32; margin-bottom: 2px; }
-  .day-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-  .day-chip { font-size: 10px; background: #e8f5e9; color: #2e7d32; padding: 2px 7px; border-radius: 10px; margin-left: 6px; text-transform: none; letter-spacing: 0; font-weight: 600; }
-  .day-arrow { font-size: 13px; color: #7aaa7a; }
-  .day-summary { font-size: 11px; color: #6a8a6a; padding: 6px 4px 10px; line-height: 1.7; }
   .fixture-row { display: grid; grid-template-columns: 1fr 80px 1fr; align-items: center; gap: 6px; padding: 8px 4px; border-bottom: 1px solid #e0ede0; }
   .fixture-row:hover { background: #e8f5e9; }
   .home-name { text-align: right; font-weight: 600; font-size: 13px; color: #1a2e1a; word-break: break-word; }
@@ -266,8 +262,8 @@
 <div id="page-bonus" class="page">
   <div class="controls">
     <div class="controls-inner">
-      <input type="text" id="search-bonus" placeholder="Search entries…" oninput="renderBonus()">
       <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      <span style="font-size:12px;color:#8aaa8a">Ranked by total goals conceded by 8 teams</span>
     </div>
   </div>
   <div class="content-wrap-wide">
@@ -487,14 +483,6 @@ function renderBonus(){
   // Sort each group by gc desc
   Object.values(groups).forEach(g=>g.sort((a,b)=>b.gc-a.gc));
 
-  if(q&&!Object.values(groups).some(g=>g.length)){
-    grid.innerHTML=`<div class="state-div">No entries match "${q}".</div>`;
-    return;
-  }
-  if(q&&!Object.values(groups).some(g=>g.length)){
-    grid.innerHTML=`<div class="state-div">No entries match "${q}".</div>`;
-    return;
-  }
   grid.innerHTML=Object.entries(groups).map(([grp,members])=>{
     if(!members.length) return '';
     const rows=members.map((e,i)=>{
@@ -821,9 +809,8 @@ function renderFixtures(){
     if(!dateMap[key]){dateMap[key]={label,matches:[]};dateOrder.push(key);}
     dateMap[key].matches.push(f);
   });
-  document.getElementById('fixtures-wrap').innerHTML=dateOrder.map((dk,di)=>{
+  document.getElementById('fixtures-wrap').innerHTML=dateOrder.map(dk=>{
     const{label,matches}=dateMap[dk];
-    const allPlayed=matches.every(f=>f.played);
     const rows=matches.map(f=>{
       const groupTag=f.groupLetter?`<span class="fix-group">Grp ${f.groupLetter}</span>`:(f.koRound?`<span class="fix-group">${f.koRound}</span>`:'');
       const hf=flag(f.home),af=flag(f.away);
@@ -840,32 +827,8 @@ function renderFixtures(){
         ${venueEl}
       </div>`;
     }).join('');
-    if(allPlayed&&statusF==='all'){
-      // Compact collapsed summary for fully-finished days
-      const summary=matches.map(f=>`${abbr(f.home)} ${f.homeGoals}-${f.awayGoals} ${abbr(f.away)}`).join(' · ');
-      return `<div class="section-block day-collapsed" id="day-${di}">
-        <div class="section-label day-toggle" onclick="toggleDay(${di})">
-          <span>${label} <span class="day-chip">✓ ${matches.length} finished</span></span>
-          <span class="day-arrow">▾</span>
-        </div>
-        <div class="day-summary">${summary}</div>
-        <div class="day-full" style="display:none">${rows}</div>
-      </div>`;
-    }
     return `<div class="section-block"><div class="section-label">${label} </div>${rows}</div>`;
   }).join('');
-}
-
-function toggleDay(idx){
-  const block=document.getElementById('day-'+idx);
-  if(!block) return;
-  const summary=block.querySelector('.day-summary');
-  const full=block.querySelector('.day-full');
-  const arrow=block.querySelector('.day-arrow');
-  const isOpen=full.style.display!=='none';
-  full.style.display=isOpen?'none':'block';
-  summary.style.display=isOpen?'block':'none';
-  arrow.textContent=isOpen?'▾':'▴';
 }
 
 // ── Render groups ────────────────────────────────────────────────────
