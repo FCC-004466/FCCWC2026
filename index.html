@@ -132,24 +132,6 @@
 
   /* Groups */
   .gs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1rem; margin-top: 0.75rem; }
-  .wc-toggle { display: flex; background: #e8f5e9; border-radius: 8px; padding: 3px; gap: 2px; }
-  .wc-toggle-btn { border: none; background: transparent; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #5a7a5a; border-radius: 6px; cursor: pointer; }
-  .wc-toggle-btn.active { background: #2e7d32; color: #fff; }
-  .bracket-wrap { overflow-x: auto; padding-bottom: 0.5rem; }
-  .bracket-scroll { display: inline-block; min-width: 100%; }
-  .bracket-cols { display: flex; gap: 18px; padding: 0.5rem 0.25rem; align-items: flex-start; }
-  .bracket-col { display: flex; flex-direction: column; min-width: 150px; }
-  .bracket-col-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #2e7d32; text-align: center; padding-bottom: 6px; border-bottom: 2px solid #2e7d32; margin-bottom: 8px; }
-  .bracket-pair-group { border: 1px dashed #b8d8b8; border-radius: 9px; padding: 6px; margin-bottom: 14px; }
-  .bracket-match { background: #fff; border: 1px solid #d4e8d4; border-radius: 7px; overflow: hidden; margin-bottom: 6px; }
-  .bracket-match:last-child { margin-bottom: 0; }
-  .bracket-team { display: flex; align-items: center; gap: 5px; padding: 5px 7px; font-size: 11px; font-weight: 600; color: #4a6a4a; border-bottom: 1px solid #eef5ee; }
-  .bracket-team:last-child { border-bottom: none; }
-  .bracket-team.bracket-winner { color: #1a2e1a; background: #f0f9f0; font-weight: 700; }
-  .bracket-flag { flex-shrink: 0; }
-  .bracket-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bracket-score { font-weight: 700; color: #2e7d32; min-width: 14px; text-align: right; }
-  .bracket-feeds-label { font-size: 8px; color: #9ab89a; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 2px; }
   .gs-card { background: #fff; border: 1px solid #d4e8d4; border-radius: 10px; overflow: hidden; }
   .gs-card-header { background: #1a4a1a; color: #fff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 7px 10px; }
   .gs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -203,7 +185,7 @@
     <button class="nav-tab active" onclick="showPage('leaderboard',this)">🏆 Standings</button>
     <button class="nav-tab" onclick="showPage('entries',this)">👥 Entries</button>
     <button class="nav-tab" onclick="showPage('fixtures',this)">📅 Fixtures</button>
-    <button class="nav-tab" onclick="showPage('groups',this)">📊 WC</button>
+    <button class="nav-tab" onclick="showPage('groups',this)">📊 Groups</button>
     <button class="nav-tab" onclick="showPage('bonus',this)">🎯 Bonus</button>
   </div>
 </header>
@@ -275,21 +257,13 @@
 <div id="page-groups" class="page">
   <div class="controls">
     <div class="controls-inner">
-      <div class="wc-toggle">
-        <button class="wc-toggle-btn active" id="wc-toggle-groups" onclick="setWcView('groups')">Groups</button>
-        <button class="wc-toggle-btn" id="wc-toggle-bracket" onclick="setWcView('bracket')">Bracket</button>
-      </div>
       <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      <span style="font-size:12px;color:#8aaa8a">Calculated from match results</span>
     </div>
   </div>
   <div class="content-wrap-wide">
-    <div id="wc-view-groups">
-      <div class="gs-grid" id="gs-grid"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
-      <p class="gs-note">✓ = qualified. Top 2 per group qualify automatically; best 8 third-place teams also advance.</p>
-    </div>
-    <div id="wc-view-bracket" style="display:none">
-      <div id="bracket-wrap" class="bracket-wrap"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
-    </div>
+    <div class="gs-grid" id="gs-grid"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
+    <p class="gs-note">✓ = qualified. Top 2 per group qualify automatically; best 8 third-place teams also advance.</p>
   </div>
 </div>
 
@@ -582,7 +556,6 @@ async function loadAll(){
     if(fR.ok) allFixtures=parseFixtures(await fR.text());
     if(wR.ok) allWorldData=parseWorld(await wR.text());
     renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
-    if(document.getElementById('wc-view-bracket')&&document.getElementById('wc-view-bracket').style.display!=='none') renderBracket();
     document.getElementById('updated-tag').textContent=
       'Updated '+new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
@@ -867,86 +840,6 @@ function renderFixtures(){
 }
 
 // ── Render groups ────────────────────────────────────────────────────
-function setWcView(view){
-  document.getElementById('wc-view-groups').style.display=view==='groups'?'block':'none';
-  document.getElementById('wc-view-bracket').style.display=view==='bracket'?'block':'none';
-  document.getElementById('wc-toggle-groups').classList.toggle('active',view==='groups');
-  document.getElementById('wc-toggle-bracket').classList.toggle('active',view==='bracket');
-  if(view==='bracket') renderBracket();
-}
-
-// Parse "Match 74 Winner" / "Match 74 Loser" text to get the feeder match number
-function feederNum(text){
-  if(!text) return null;
-  const m=text.match(/Match\s+(\d+)/i);
-  return m?parseInt(m[1]):null;
-}
-
-function renderBracket(){
-  const wrap=document.getElementById('bracket-wrap');
-  if(!wrap) return;
-  const koMatches=allFixtures.filter(f=>f.isKO&&f.koRound&&f.koRound!=='3rd').sort((a,b)=>a.matchNum-b.matchNum);
-  if(!koMatches.length){wrap.innerHTML='<div class="state-div">Bracket not available yet.</div>';return;}
-  const rounds=KO_ORDER.filter(r=>r!=='3rd').filter(r=>koMatches.some(f=>f.koRound===r));
-  const byRound={};
-  rounds.forEach(r=>byRound[r]=koMatches.filter(f=>f.koRound===r));
-  const byMatchNum={};
-  koMatches.forEach(f=>byMatchNum[f.matchNum]=f);
-
-  function matchCard(f){
-    const hWin=f.played&&f.homeGoals>f.awayGoals;
-    const aWin=f.played&&f.awayGoals>f.homeGoals;
-    const hScore=f.played?f.homeGoals:'';
-    const aScore=f.played?f.awayGoals:'';
-    const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
-    const hName=hFeed!=null?`Winner M${hFeed}`:(abbr(f.home)||'TBC');
-    const aName=aFeed!=null?`Winner M${aFeed}`:(abbr(f.away)||'TBC');
-    const hFlagEl=hFeed!=null?'':flag(f.home);
-    const aFlagEl=aFeed!=null?'':flag(f.away);
-    return `<div class="bracket-match">
-      <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${hFlagEl}</span><span class="bracket-name">${hName}</span><span class="bracket-score">${hScore}</span></div>
-      <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${aFlagEl}</span><span class="bracket-name">${aName}</span><span class="bracket-score">${aScore}</span></div>
-    </div>`;
-  }
-
-  const colsHtml=rounds.map((r,ri)=>{
-    const matches=byRound[r];
-    const nextRound=rounds[ri+1];
-    if(!nextRound){
-      // Final round: just list matches, no further grouping needed
-      return `<div class="bracket-col">
-        <div class="bracket-col-header">${KO_LABEL[r]}</div>
-        ${matches.map(f=>matchCard(f)).join('')}
-      </div>`;
-    }
-    // Group this round's matches by which next-round match they feed into,
-    // using the real "Match N Winner" references found in the next round's text.
-    const nextMatches=byRound[nextRound];
-    const groupsHtml=nextMatches.map(nf=>{
-      const hFeed=feederNum(nf.home), aFeed=feederNum(nf.away);
-      const feedMatches=[hFeed,aFeed].filter(n=>n!=null).map(n=>byMatchNum[n]).filter(Boolean);
-      if(!feedMatches.length) return ''; // no parsable feeders for this next-round match
-      return `<div class="bracket-pair-group">
-        ${feedMatches.map(f=>matchCard(f)).join('')}
-        <div class="bracket-feeds-label">→ ${KO_LABEL[nextRound]} M${nf.matchNum}</div>
-      </div>`;
-    }).join('');
-    // Any matches in this round not covered by a parsable feeder reference (fallback: list alone)
-    const coveredNums=new Set();
-    nextMatches.forEach(nf=>{
-      [feederNum(nf.home),feederNum(nf.away)].forEach(n=>{if(n!=null) coveredNums.add(n);});
-    });
-    const uncovered=matches.filter(f=>!coveredNums.has(f.matchNum));
-    const uncoveredHtml=uncovered.map(f=>matchCard(f)).join('');
-    return `<div class="bracket-col">
-      <div class="bracket-col-header">${KO_LABEL[r]}</div>
-      ${groupsHtml}${uncoveredHtml}
-    </div>`;
-  }).join('');
-
-  wrap.innerHTML=`<div class="bracket-scroll"><div class="bracket-cols">${colsHtml}</div></div>`;
-}
-
 function renderGroups(){
   const teamData={};
   allFixtures.filter(f=>!f.isKO&&f.groupLetter).forEach(f=>{
