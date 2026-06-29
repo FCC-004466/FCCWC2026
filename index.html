@@ -768,14 +768,40 @@ function parseFixtures(csv){
 
 // ── Modal ────────────────────────────────────────────────────────────
 // Returns true if a team has lost a played knockout match (and is therefore out of the tournament)
+// Returns true if a team has lost a played knockout match, OR if R32 is fully
+// confirmed (every R32 slot has a real team name, not a placeholder) and this
+// team played in the group stage but doesn't appear in any R32 fixture.
 function isTeamEliminated(teamName){
   if(!teamName) return false;
-  return allFixtures.some(f=>{
+  const lower=teamName.toLowerCase();
+  const alias=TEAM_ALIASES[lower];
+  function matches(name){
+    if(!name) return false;
+    const nl=name.toLowerCase();
+    return nl===lower||nl===alias||abbr(name).toLowerCase()===lower;
+  }
+  // Knockout loss check
+  const lostKO=allFixtures.some(f=>{
     if(!f.isKO||!f.played) return false;
-    if(f.home===teamName) return f.awayGoals>f.homeGoals;
-    if(f.away===teamName) return f.homeGoals>f.awayGoals;
+    if(matches(f.home)) return f.awayGoals>f.homeGoals;
+    if(matches(f.away)) return f.homeGoals>f.awayGoals;
     return false;
   });
+  if(lostKO) return true;
+
+  // Group-stage-only elimination: only applies once every R32 slot has a real
+  // team name (no "Winner Group X" / "3rd Group ..." placeholders remaining).
+  const r32=allFixtures.filter(f=>f.isKO&&f.koRound==='R32');
+  if(!r32.length) return false;
+  const r32Resolved=r32.every(f=>f.home&&f.away&&!/group|winner|runner|3rd/i.test(f.home)&&!/group|winner|runner|3rd/i.test(f.away));
+  if(!r32Resolved) return false;
+
+  const playedGroupStage=allFixtures.some(f=>!f.isKO&&f.groupLetter&&matches(f.home));
+  const playedGroupStage2=allFixtures.some(f=>!f.isKO&&f.groupLetter&&matches(f.away));
+  if(!playedGroupStage&&!playedGroupStage2) return false; // not a group-stage team we recognise
+
+  const inR32=r32.some(f=>matches(f.home)||matches(f.away));
+  return !inR32;
 }
 
 function openModal(entry){
