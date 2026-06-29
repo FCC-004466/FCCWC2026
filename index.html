@@ -141,7 +141,7 @@
   .bracket-col-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #2e7d32; text-align: center; padding-bottom: 6px; border-bottom: 2px solid #2e7d32; margin-bottom: 8px; }
   .bracket-col-matches { position: relative; }
   .bracket-match { position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #d4e8d4; border-radius: 7px; overflow: hidden; }
-  .bracket-meta { font-size: 9px; color: #8aaa8a; text-align: center; padding: 3px 4px; background: #f7fbf7; border-bottom: 1px solid #eef5ee; line-height: 1.3; }
+  .bracket-meta { font-size: 9px; color: #8aaa8a; text-align: center; padding: 4px 4px; background: #f7fbf7; border-bottom: 1px solid #eef5ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
   .bracket-team { display: flex; align-items: center; gap: 5px; padding: 4px 7px; font-size: 11px; font-weight: 600; color: #4a6a4a; border-bottom: 1px solid #eef5ee; }
   .bracket-team:last-child { border-bottom: none; }
   .bracket-team.bracket-winner { color: #1a2e1a; background: #f0f9f0; font-weight: 700; }
@@ -893,7 +893,7 @@ function renderBracket(){
   const byMatchNum={};
   koMatches.forEach(f=>byMatchNum[f.matchNum]=f);
 
-  const MATCH_H=58; // taller now: meta row + 2 team rows
+  const MATCH_H=66; // meta row (single line, ellipsis) + 2 team rows, precisely measured
 
   // Work backwards from the Final: give it the full slot range, then recursively
   // split that range in half for the two matches feeding it, all the way back
@@ -915,7 +915,7 @@ function renderBracket(){
     assignRange(f.matchNum,i*span,(i+1)*span);
   });
 
-  const SLOT_H=MATCH_H+14;
+  const SLOT_H=MATCH_H+20;
   const centers={};
   Object.keys(slotRange).forEach(mn=>{
     const{start,end}=slotRange[mn];
@@ -938,9 +938,9 @@ function renderBracket(){
       const aFlagEl=aFeed!=null?'':flag(f.away);
       const top=centers[f.matchNum]-MATCH_H/2;
       const dateStr=f.irish?`${f.irish.dateLabel} ${f.irish.timeStr}`:'Date TBC';
-      const venueStr=f.venue?f.venue:'';
-      return `<div class="bracket-match" style="top:${top}px">
-        <div class="bracket-meta">M${f.matchNum} · ${dateStr}${venueStr?'<br>'+venueStr:''}</div>
+      const metaStr=f.venue?`M${f.matchNum} · ${dateStr} · ${f.venue}`:`M${f.matchNum} · ${dateStr}`;
+      return `<div class="bracket-match" style="top:${top}px;height:${MATCH_H}px">
+        <div class="bracket-meta" title="${metaStr}">M${f.matchNum} · ${dateStr}</div>
         <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${hFlagEl}</span><span class="bracket-name">${hName}</span><span class="bracket-score">${hScore}</span></div>
         <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${aFlagEl}</span><span class="bracket-name">${aName}</span><span class="bracket-score">${aScore}</span></div>
       </div>`;
