@@ -888,29 +888,53 @@ function renderBracket(){
   const rounds=KO_ORDER.filter(r=>r!=='3rd').filter(r=>koMatches.some(f=>f.koRound===r));
   const byRound={};
   rounds.forEach(r=>byRound[r]=koMatches.filter(f=>f.koRound===r));
+  const byMatchNum={};
+  koMatches.forEach(f=>byMatchNum[f.matchNum]=f);
 
-  const MATCH_H=46, GAP=16;
-  const centers={}; // centers[matchNum] = y-center in px
+  const MATCH_H=46, SLOT=70; // SLOT = vertical space one "slot" occupies at the earliest round
 
-  // First round: fixed even spacing, in match-number order
-  const firstRound=rounds[0];
-  byRound[firstRound].forEach((f,i)=>{ centers[f.matchNum]=i*(MATCH_H+GAP)+MATCH_H/2; });
-
-  // Later rounds: position = midpoint of its real feeder matches,
-  // found by reading "Match N Winner" text directly from the sheet
-  for(let r=1;r<rounds.length;r++){
-    byRound[rounds[r]].forEach(f=>{
+  // Build a reverse map: matchNum -> {nextMatchNum, side} telling us
+  // which later match this one feeds into, and whether as the home or away slot.
+  const feedsInto={};
+  rounds.forEach(r=>{
+    byRound[r].forEach(f=>{
       const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
-      const a=hFeed!=null?centers[hFeed]:undefined;
-      const b=aFeed!=null?centers[aFeed]:undefined;
-      if(a!==undefined&&b!==undefined) centers[f.matchNum]=(a+b)/2;
-      else if(a!==undefined) centers[f.matchNum]=a;
-      else if(b!==undefined) centers[f.matchNum]=b;
-      else centers[f.matchNum]=0;
+      if(hFeed!=null) feedsInto[hFeed]={into:f.matchNum,side:'home'};
+      if(aFeed!=null) feedsInto[aFeed]={into:f.matchNum,side:'away'};
     });
-  }
+  });
 
-  const totalHeight=Math.max(...Object.values(centers))+MATCH_H/2+20;
+  // Work backwards from the Final: give the last round's match(es) a slot range
+  // spanning the full bracket height, then recursively split that range in half
+  // for the two matches that feed it, and so on back to the first round.
+  const lastRound=rounds[rounds.length-1];
+  const totalSlots=byRound[rounds[0]].length; // number of first-round matches = total leaf slots
+  const slotRange={}; // matchNum -> {start,end} in slot units (0-indexed, end exclusive)
+
+  function assignRange(matchNum, start, end){
+    slotRange[matchNum]={start,end};
+    const f=byMatchNum[matchNum];
+    if(!f) return;
+    const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
+    const mid=(start+end)/2;
+    if(hFeed!=null) assignRange(hFeed, start, mid);
+    if(aFeed!=null) assignRange(aFeed, mid, end);
+  }
+  byRound[lastRound].forEach((f,i)=>{
+    const span=totalSlots/byRound[lastRound].length;
+    assignRange(f.matchNum, i*span, (i+1)*span);
+  });
+
+  // Convert slot ranges to pixel centers
+  const centers={};
+  Object.keys(slotRange).forEach(mn=>{
+    const{start,end}=slotRange[mn];
+    centers[mn]=((start+end)/2)*SLOT;
+  });
+  // Any match with no assigned range (shouldn't normally happen) gets a fallback
+  koMatches.forEach(f=>{ if(centers[f.matchNum]===undefined) centers[f.matchNum]=0; });
+
+  const totalHeight=totalSlots*SLOT;
 
   colsEl.innerHTML=rounds.map(r=>{
     const matches=byRound[r].map(f=>{
