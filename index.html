@@ -81,6 +81,9 @@
   .modal-goals-label { font-size: 12px; color: #8aaa8a; text-align: center; margin-bottom: 1rem; }
   .teams-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .team-card { background: #f0f7f0; border: 1px solid #c8e0c8; border-radius: 8px; padding: 8px 10px; }
+  .team-card.team-eliminated { background: #f2f2f2; border-color: #ddd; opacity: 0.6; }
+  .team-card.team-eliminated .team-name { color: #888; }
+  .elim-tag { font-size: 8px; font-weight: 700; color: #c0392b; background: #fde8e6; padding: 1px 4px; border-radius: 4px; letter-spacing: 0.03em; }
   .team-card .pot-label { font-size: 10px; color: #5a7a5a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
   .team-card .team-name { font-size: 13px; font-weight: 600; color: #1a2e1a; }
   .modal-loading { text-align: center; padding: 2rem; color: #8aaa8a; }
@@ -97,6 +100,7 @@
   .entry-card-header .e-goals { font-size: 15px; font-weight: 700; color: #2e7d32; }
   .entry-teams { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; padding: 10px 12px; }
   .entry-team { background: #f4f7f4; border-radius: 6px; padding: 5px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #1a2e1a; }
+  .entry-team.team-eliminated { background: #f2f2f2; opacity: 0.6; color: #888; }
   .entry-team .pot { font-size: 9px; color: #8aaa8a; text-transform: uppercase; display: block; margin-bottom: 2px; }
 
   /* Fixtures */
@@ -763,6 +767,17 @@ function parseFixtures(csv){
 }
 
 // ── Modal ────────────────────────────────────────────────────────────
+// Returns true if a team has lost a played knockout match (and is therefore out of the tournament)
+function isTeamEliminated(teamName){
+  if(!teamName) return false;
+  return allFixtures.some(f=>{
+    if(!f.isKO||!f.played) return false;
+    if(f.home===teamName) return f.awayGoals>f.homeGoals;
+    if(f.away===teamName) return f.homeGoals>f.awayGoals;
+    return false;
+  });
+}
+
 function openModal(entry){
   document.getElementById('modal-name').textContent=entry.name;
   document.getElementById('modal-rank').textContent='Rank #'+entry.rank;
@@ -775,12 +790,15 @@ function openModal(entry){
     return;
   }
   const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
-  teamsEl.innerHTML=player.teams.map((t,i)=>`
-    <div class="team-card">
+  teamsEl.innerHTML=player.teams.map((t,i)=>{
+    const out=isTeamEliminated(t);
+    return `
+    <div class="team-card ${out?'team-eliminated':''}">
       <div class="pot-label">${potLabels[i]||''}</div>
-      <div class="team-name">${flag(t)} ${t}</div>
+      <div class="team-name">${flag(t)} ${t}${out?' <span class="elim-tag">OUT</span>':''}</div>
       <div style="font-size:11px;color:#2e7d32;font-weight:700;margin-top:2px">${player.teamGoals?player.teamGoals[i]||0:0} goals</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function closeModal(e){if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
 function closeModalBtn(){document.getElementById('modal').classList.remove('open');}
@@ -823,7 +841,10 @@ function renderEntries(){
     const player=allWorldData.find(p=>p.name.toLowerCase()===e.name.toLowerCase());
     const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
     const teamsHtml=player&&player.teams.length
-      ?player.teams.map((t,i)=>`<div class="entry-team"><span class="pot">${potLabels[i]}</span>${flag(t)} ${t}<div style="font-size:10px;color:#2e7d32;font-weight:700;margin-top:2px">${player.teamGoals?player.teamGoals[i]||0:0} goals</div></div>`).join('')
+      ?player.teams.map((t,i)=>{
+        const out=isTeamEliminated(t);
+        return `<div class="entry-team ${out?'team-eliminated':''}"><span class="pot">${potLabels[i]}</span>${flag(t)} ${t}${out?' <span class="elim-tag">OUT</span>':''}<div style="font-size:10px;color:#2e7d32;font-weight:700;margin-top:2px">${player.teamGoals?player.teamGoals[i]||0:0} goals</div></div>`;
+      }).join('')
       :`<div class="entry-team" style="grid-column:1/-1;color:#8aaa8a">Teams not yet assigned</div>`;
     const rankEl='#'+e.rank;
     const rankClass=e.rank===1?'rank-1':e.rank===2?'rank-2':e.rank===3?'rank-3':e.rank===4?'rank-4':'';
@@ -890,6 +911,17 @@ function feederNum(text){
   return m?parseInt(m[1]):null;
 }
 
+// Fixed World Cup 2026 knockout bracket structure (match number -> [home feeder, away feeder]).
+// Used as a fallback once a result has resolved "Match N Winner" text into a real team
+// name, since at that point we can no longer parse the feeder relationship from the text.
+const WC26_BRACKET_MAP={
+  89:[74,77], 90:[73,75], 91:[76,78], 92:[79,80],
+  93:[83,84], 94:[81,82], 95:[86,88], 96:[85,87],
+  97:[89,90], 98:[93,94], 99:[91,92], 100:[95,96],
+  101:[97,98], 102:[99,100],
+  104:[101,102]
+};
+
 function renderBracket(){
   const colsEl=document.getElementById('bracket-cols');
   if(!colsEl) return;
@@ -904,17 +936,30 @@ function renderBracket(){
 
   const MATCH_H=66; // meta row (single line, ellipsis) + 2 team rows, precisely measured
 
+  // childrenOf[matchNum] = [home feeder matchNum, away feeder matchNum].
+  // Prefer parsing live "Match N Winner" text (works for any tournament/sheet layout);
+  // fall back to the fixed WC26 structure map once a result has resolved that text
+  // into a real team name, so positioning stays correct after every match plays out.
+  const childrenOf={};
+  koMatches.forEach(f=>{
+    const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
+    const fallback=WC26_BRACKET_MAP[f.matchNum];
+    childrenOf[f.matchNum]=[
+      hFeed!=null?hFeed:(fallback?fallback[0]:null),
+      aFeed!=null?aFeed:(fallback?fallback[1]:null)
+    ];
+  });
+
   // Work backwards from the Final: give it the full slot range, then recursively
-  // split that range in half for the two matches feeding it, all the way back
-  // to the first knockout round.
+  // split that range in half for the two matches feeding it, using childrenOf above.
   const lastRound=rounds[rounds.length-1];
   const totalSlots=byRound[rounds[0]].length;
   const slotRange={};
   function assignRange(matchNum,start,end){
     slotRange[matchNum]={start,end};
-    const f=byMatchNum[matchNum];
-    if(!f) return;
-    const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
+    const kids=childrenOf[matchNum];
+    if(!kids) return;
+    const[hFeed,aFeed]=kids;
     const mid=(start+end)/2;
     if(hFeed!=null) assignRange(hFeed,start,mid);
     if(aFeed!=null) assignRange(aFeed,mid,end);
