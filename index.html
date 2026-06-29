@@ -142,7 +142,8 @@
   .bracket-col-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #2e7d32; text-align: center; padding-bottom: 6px; border-bottom: 2px solid #2e7d32; margin-bottom: 8px; }
   .bracket-col-matches { position: relative; }
   .bracket-match { position: absolute; left: 0; right: 0; background: #fff; border: 1px solid #d4e8d4; border-radius: 7px; overflow: hidden; }
-  .bracket-meta { font-size: 9px; color: #8aaa8a; text-align: center; padding: 4px 4px; background: #f7fbf7; border-bottom: 1px solid #eef5ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+  .bracket-meta { font-size: 9px; color: #8aaa8a; text-align: center; padding: 4px 4px 2px; background: #f7fbf7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+  .bracket-venue { font-size: 8px; color: #9ab89a; text-align: center; padding: 0 4px 4px; background: #f7fbf7; border-bottom: 1px solid #eef5ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
   .bracket-team { display: flex; align-items: center; gap: 5px; padding: 4px 7px; font-size: 11px; font-weight: 600; color: #4a6a4a; border-bottom: 1px solid #eef5ee; }
   .bracket-team:last-child { border-bottom: none; }
   .bracket-team.bracket-winner { color: #1a2e1a; background: #f0f9f0; font-weight: 700; }
@@ -201,8 +202,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('leaderboard',this)">🏆 Standings</button>
     <button class="nav-tab" onclick="showPage('entries',this)">👥 Entries</button>
-    <button class="nav-tab" onclick="showPage('fixtures',this)">📅 Fixtures</button>
-    <button class="nav-tab" onclick="showPage('groups',this)">📊 WC</button>
+    <button class="nav-tab" onclick="showPage('groups',this)">📅 Fixtures</button>
     <button class="nav-tab" onclick="showPage('bonus',this)">🎯 Bonus</button>
   </div>
 </header>
@@ -251,33 +251,22 @@
 </div>
 
 <!-- FIXTURES -->
-<div id="page-fixtures" class="page">
-  <div class="controls">
-    <div class="controls-inner">
-      <select id="fix-filter" onchange="renderFixtures()">
-        <option value="all">All matches</option>
-        <option value="played">Results only</option>
-        <option value="upcoming">Upcoming only</option>
-      </select>
-      <select id="round-filter" onchange="renderFixtures()">
-        <option value="all">All rounds</option>
-      </select>
-      <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
-    </div>
-  </div>
-  <div class="content-wrap">
-    <div id="fixtures-wrap"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
-  </div>
-</div>
-
-<!-- GROUPS -->
+<!-- WC TAB (Fixtures / Bracket / Groups) -->
 <div id="page-groups" class="page">
   <div class="controls">
     <div class="controls-inner">
       <select id="wc-view-select" onchange="setWcView(this.value)">
-        <option value="bracket">Bracket</option>
+        <option value="bracket" selected>Bracket</option>
         <option value="groups">Groups</option>
         <option value="fixtures">Fixtures</option>
+      </select>
+      <select id="fix-filter" onchange="renderFixtures('wc-fixtures-wrap')" style="display:none">
+        <option value="all">All matches</option>
+        <option value="played">Results only</option>
+        <option value="upcoming">Upcoming only</option>
+      </select>
+      <select id="round-filter" onchange="renderFixtures('wc-fixtures-wrap')" style="display:none">
+        <option value="all">All rounds</option>
       </select>
       <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
     </div>
@@ -927,6 +916,8 @@ function setWcView(view){
   document.getElementById('wc-view-groups').style.display=view==='groups'?'block':'none';
   document.getElementById('wc-view-bracket').style.display=view==='bracket'?'block':'none';
   document.getElementById('wc-view-fixtures').style.display=view==='fixtures'?'block':'none';
+  document.getElementById('fix-filter').style.display=view==='fixtures'?'inline-block':'none';
+  document.getElementById('round-filter').style.display=view==='fixtures'?'inline-block':'none';
   if(view==='bracket') renderBracket();
   if(view==='fixtures') renderFixtures('wc-fixtures-wrap');
 }
@@ -960,7 +951,7 @@ function renderBracket(){
   const byMatchNum={};
   koMatches.forEach(f=>byMatchNum[f.matchNum]=f);
 
-  const MATCH_H=66; // meta row (single line, ellipsis) + 2 team rows, precisely measured
+  const MATCH_H=85; // meta row + venue row (both single line, ellipsis) + 2 team rows, precisely measured
 
   // childrenOf[matchNum] = [home feeder matchNum, away feeder matchNum].
   // Prefer parsing live "Match N Winner" text (works for any tournament/sheet layout);
@@ -1018,9 +1009,10 @@ function renderBracket(){
       const aFlagEl=aFeed!=null?'':flag(f.away);
       const top=centers[f.matchNum]-MATCH_H/2;
       const dateStr=f.irish?`${f.irish.dateLabel} ${f.irish.timeStr}`:'Date TBC';
-      const metaStr=f.venue?`M${f.matchNum} · ${dateStr} · ${f.venue}`:`M${f.matchNum} · ${dateStr}`;
+      const venueLine=f.venue?`<div class="bracket-venue" title="${f.venue}">${f.venue}</div>`:'';
       return `<div class="bracket-match" style="top:${top}px;height:${MATCH_H}px">
-        <div class="bracket-meta" title="${metaStr}">M${f.matchNum} · ${dateStr}</div>
+        <div class="bracket-meta">M${f.matchNum} · ${dateStr}</div>
+        ${venueLine}
         <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${hFlagEl}</span><span class="bracket-name">${hName}</span><span class="bracket-score">${hScore}</span></div>
         <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${aFlagEl}</span><span class="bracket-name">${aName}</span><span class="bracket-score">${aScore}</span></div>
       </div>`;
