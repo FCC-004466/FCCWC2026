@@ -132,9 +132,6 @@
 
   /* Groups */
   .gs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1rem; margin-top: 0.75rem; }
-  .wc-toggle { display: flex; background: #e8f5e9; border-radius: 8px; padding: 3px; gap: 2px; }
-  .wc-toggle-btn { border: none; background: transparent; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #5a7a5a; border-radius: 6px; cursor: pointer; }
-  .wc-toggle-btn.active { background: #2e7d32; color: #fff; }
   .bracket-wrap { overflow-x: auto; padding-bottom: 0.5rem; }
   .bracket-cols { display: flex; gap: 26px; padding: 0.5rem 0.25rem; }
   .bracket-col { width: 168px; flex-shrink: 0; }
@@ -273,22 +270,26 @@
 <div id="page-groups" class="page">
   <div class="controls">
     <div class="controls-inner">
-      <div class="wc-toggle">
-        <button class="wc-toggle-btn active" id="wc-toggle-groups" onclick="setWcView('groups')">Groups</button>
-        <button class="wc-toggle-btn" id="wc-toggle-bracket" onclick="setWcView('bracket')">Bracket</button>
-      </div>
+      <select id="wc-view-select" onchange="setWcView(this.value)">
+        <option value="bracket">Bracket</option>
+        <option value="groups">Groups</option>
+        <option value="fixtures">Fixtures</option>
+      </select>
       <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
     </div>
   </div>
   <div class="content-wrap-wide">
-    <div id="wc-view-groups">
-      <div class="gs-grid" id="gs-grid"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
-      <p class="gs-note">✓ = qualified. Top 2 per group qualify automatically; best 8 third-place teams also advance.</p>
-    </div>
-    <div id="wc-view-bracket" style="display:none">
+    <div id="wc-view-bracket">
       <div id="bracket-wrap" class="bracket-wrap">
         <div id="bracket-cols" class="bracket-cols"></div>
       </div>
+    </div>
+    <div id="wc-view-groups" style="display:none">
+      <div class="gs-grid" id="gs-grid"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
+      <p class="gs-note">✓ = qualified. Top 2 per group qualify automatically; best 8 third-place teams also advance.</p>
+    </div>
+    <div id="wc-view-fixtures" style="display:none">
+      <div id="wc-fixtures-wrap"><div class="state-div"><span class="spinner"></span> Loading…</div></div>
     </div>
   </div>
 </div>
@@ -582,7 +583,12 @@ async function loadAll(){
     if(fR.ok) allFixtures=parseFixtures(await fR.text());
     if(wR.ok) allWorldData=parseWorld(await wR.text());
     renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
-    if(document.getElementById('wc-view-bracket')&&document.getElementById('wc-view-bracket').style.display!=='none') renderBracket();
+    {
+      const wcSel=document.getElementById('wc-view-select');
+      const wcView=wcSel?wcSel.value:'bracket';
+      if(wcView==='bracket') renderBracket();
+      else if(wcView==='fixtures') renderFixtures('wc-fixtures-wrap');
+    }
     document.getElementById('updated-tag').textContent=
       'Updated '+new Date().toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
@@ -832,7 +838,8 @@ function renderEntries(){
 }
 
 // ── Render fixtures ──────────────────────────────────────────────────
-function renderFixtures(){
+function renderFixtures(targetId){
+  targetId=targetId||'fixtures-wrap';
   const statusF=document.getElementById('fix-filter').value;
   const roundF=document.getElementById('round-filter').value;
   let data=allFixtures.filter(f=>{
@@ -844,7 +851,9 @@ function renderFixtures(){
     }
     return true;
   });
-  if(!data.length){document.getElementById('fixtures-wrap').innerHTML=`<div class="state-div">No matches found.</div>`;return;}
+  const target=document.getElementById(targetId);
+  if(!target) return;
+  if(!data.length){target.innerHTML=`<div class="state-div">No matches found.</div>`;return;}
   const rows=data.map(f=>{
     const dateLabel=f.irish?f.irish.dateLabel:'TBC';
     const groupTag=f.groupLetter?`Grp ${f.groupLetter}`:(f.koRound?f.koRound:'');
@@ -863,16 +872,16 @@ function renderFixtures(){
       ${venueEl}
     </div>`;
   }).join('');
-  document.getElementById('fixtures-wrap').innerHTML=rows;
+  target.innerHTML=rows;
 }
 
 // ── Render groups ────────────────────────────────────────────────────
 function setWcView(view){
   document.getElementById('wc-view-groups').style.display=view==='groups'?'block':'none';
   document.getElementById('wc-view-bracket').style.display=view==='bracket'?'block':'none';
-  document.getElementById('wc-toggle-groups').classList.toggle('active',view==='groups');
-  document.getElementById('wc-toggle-bracket').classList.toggle('active',view==='bracket');
+  document.getElementById('wc-view-fixtures').style.display=view==='fixtures'?'block':'none';
   if(view==='bracket') renderBracket();
+  if(view==='fixtures') renderFixtures('wc-fixtures-wrap');
 }
 
 function feederNum(text){
