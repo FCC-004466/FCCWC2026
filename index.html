@@ -576,6 +576,38 @@ async function loadAll(){
     if(sR.ok) allEntries=parseStandings(await sR.text());
     if(fR.ok) allFixtures=parseFixtures(await fR.text());
     if(wR.ok) allWorldData=parseWorld(await wR.text());
+
+    // Recalculate goals from ALL fixtures (including R32+) to override sheet formula
+    // which only counts group stage. Goals in penalty shootouts don't count.
+    if(allFixtures.length&&allWorldData.length){
+      // Build goals-scored map per team from all played fixtures
+      const gfMap={};
+      allFixtures.filter(f=>f.played).forEach(f=>{
+        if(!gfMap[f.home]) gfMap[f.home]=0;
+        if(!gfMap[f.away]) gfMap[f.away]=0;
+        gfMap[f.home]+=f.homeGoals;
+        gfMap[f.away]+=f.awayGoals;
+      });
+      // Update teamGoals on each World sheet participant
+      allWorldData.forEach(p=>{
+        p.teamGoals=p.teams.map(t=>{
+          const lower=t.toLowerCase();
+          const alias=TEAM_ALIASES[lower];
+          let g=gfMap[t];
+          if(g===undefined&&alias) g=Object.keys(gfMap).find(k=>k.toLowerCase()===alias)?gfMap[Object.keys(gfMap).find(k=>k.toLowerCase()===alias)]:undefined;
+          if(g===undefined) g=Object.keys(gfMap).reduce((found,k)=>found!==undefined?found:(k.toLowerCase()===lower?gfMap[k]:undefined),undefined);
+          return g||0;
+        });
+        p.goals=p.teamGoals.reduce((s,g)=>s+g,0);
+      });
+      // Update e.goals on each standings entry
+      allEntries.forEach(e=>{
+        const p=allWorldData.find(p=>p.name.toLowerCase()===e.name.toLowerCase());
+        if(p) e.goals=p.goals;
+      });
+      // Re-sort entries by goals desc for tiebreaker awareness (rank stays from sheet)
+    }
+
     renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
     {
       const wcSel=document.getElementById('wc-view-select');
