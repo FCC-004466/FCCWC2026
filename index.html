@@ -605,7 +605,18 @@ async function loadAll(){
         const p=allWorldData.find(p=>p.name.toLowerCase()===e.name.toLowerCase());
         if(p) e.goals=p.goals;
       });
-      // Re-sort entries by goals desc for tiebreaker awareness (rank stays from sheet)
+      // Re-rank entries by new goals total (desc), using sheet tiebreakers (l,m,n) as before
+      allEntries.sort((a,b)=>b.goals-a.goals||b.l-a.l||b.m-a.m||b.n-a.n);
+      // Assign new ranks (handle ties — same goals = same rank)
+      let currentRank=1;
+      allEntries.forEach((e,i)=>{
+        if(i===0){e.rank=1;}
+        else{
+          const prev=allEntries[i-1];
+          if(e.goals===prev.goals&&e.l===prev.l&&e.m===prev.m&&e.n===prev.n) e.rank=prev.rank;
+          else e.rank=i+1;
+        }
+      });
     }
 
     renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
