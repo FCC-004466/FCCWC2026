@@ -127,6 +127,7 @@
   .score-box.upcoming { background: #d4e8d4; color: #5a7a5a; font-size: 12px; font-weight: 500; }
   .score-box.ko { background: #0f3010; }
   .score-sep { color: #7aaa7a; margin: 0 1px; }
+  .score-suffix { font-size: 9px; color: #9ab89a; margin-left: 3px; font-weight: 500; }
   .fixture-block { border-bottom: 1px solid #e0ede0; }
   .fixture-block .fixture-row { border-bottom: none; }
   .fix-venue { font-size: 10px; color: #8aaa8a; text-align: center; padding: 2px 4px 6px; }
@@ -732,6 +733,12 @@ function parseFixtures(csv){
     const homeGoals=(hgRaw===''||hgRaw==='-')?null:parseInt(hgRaw);
     const awayGoals=(agRaw===''||agRaw==='-')?null:parseInt(agRaw);
     const played=homeGoals!==null&&awayGoals!==null&&!isNaN(homeGoals)&&!isNaN(awayGoals);
+    const aet=(c[13]||'').trim().toLowerCase()==='x';
+    const homePens=(c[14]||'').trim();
+    const awayPens=(c[15]||'').trim();
+    const penHomeGoals=homePens===''?null:parseInt(homePens);
+    const penAwayGoals=awayPens===''?null:parseInt(awayPens);
+    const hasPens=penHomeGoals!==null&&penAwayGoals!==null&&!isNaN(penHomeGoals)&&!isNaN(penAwayGoals);
     const isKO=matchNum>72;
     const groupLetter=/^[A-L]$/.test(raw)?raw:null;
     if(isKO){
@@ -741,7 +748,7 @@ function parseFixtures(csv){
     const roundLabel=isKO?(KO_LABEL[koRound]||'Knockout'):('Group '+groupLetter);
     const irish=parseNYtoIrish((c[3]||'').trim());
     const venueRaw=(c[16]||'').trim().replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim();
-    fixtures.push({matchNum,raw,groupLetter,koRound,roundLabel,isKO,home,away,homeGoals,awayGoals,played,irish,venue:venueRaw});
+    fixtures.push({matchNum,raw,groupLetter,koRound,roundLabel,isKO,home,away,homeGoals,awayGoals,played,aet,hasPens,penHomeGoals,penAwayGoals,irish,venue:venueRaw});
   }
   fixtures.sort((a,b)=>a.matchNum-b.matchNum);
   const sel=document.getElementById('round-filter');
@@ -894,8 +901,9 @@ function renderFixtures(targetId){
     const dateLabel=f.irish?f.irish.dateLabel:'TBC';
     const groupTag=f.groupLetter?`Grp ${f.groupLetter}`:(f.koRound?f.koRound:'');
     const hf=flag(f.home),af=flag(f.away);
+    const suffix=f.played?(f.hasPens?` (${f.penHomeGoals}-${f.penAwayGoals}p)`:f.aet?' aet':''):'';
     const scoreEl=f.played
-      ?`<div class="score-box ${f.isKO?'ko':''}"><span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span></div>`
+      ?`<div class="score-box ${f.isKO?'ko':''}"><span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span>${suffix?`<span class="score-suffix">${suffix}</span>`:''}</div>`
       :`<div class="score-box upcoming">${f.irish?f.irish.timeStr:'TBC'}</div>`;
     const venueEl=(f.venue&&!f.played)?`<div class="fix-venue">${f.venue}</div>`:'';
     return `<div class="fixture-block ${f.played?'is-played':''}">
@@ -998,10 +1006,11 @@ function renderBracket(){
 
   colsEl.innerHTML=rounds.map(r=>{
     const matches=byRound[r].map(f=>{
-      const hWin=f.played&&f.homeGoals>f.awayGoals;
-      const aWin=f.played&&f.awayGoals>f.homeGoals;
+      const hWin=f.played&&(f.hasPens?f.penHomeGoals>f.penAwayGoals:f.homeGoals>f.awayGoals);
+      const aWin=f.played&&(f.hasPens?f.penAwayGoals>f.penHomeGoals:f.awayGoals>f.homeGoals);
       const hScore=f.played?f.homeGoals:'';
       const aScore=f.played?f.awayGoals:'';
+      const bracketSuffix=f.played?(f.hasPens?` (${f.penHomeGoals}-${f.penAwayGoals}p)`:f.aet?' aet':''):'';
       const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
       const hName=hFeed!=null?`Winner M${hFeed}`:(abbr(f.home)||'TBC');
       const aName=aFeed!=null?`Winner M${aFeed}`:(abbr(f.away)||'TBC');
@@ -1011,7 +1020,7 @@ function renderBracket(){
       const dateStr=f.irish?`${f.irish.dateLabel} ${f.irish.timeStr}`:'Date TBC';
       const venueLine=f.venue?`<div class="bracket-venue" title="${f.venue}">${f.venue}</div>`:'';
       return `<div class="bracket-match" style="top:${top}px;height:${MATCH_H}px">
-        <div class="bracket-meta">M${f.matchNum} · ${dateStr}</div>
+        <div class="bracket-meta">M${f.matchNum} · ${dateStr}${bracketSuffix?` · ${bracketSuffix}`:''}</div>
         ${venueLine}
         <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${hFlagEl}</span><span class="bracket-name">${hName}</span><span class="bracket-score">${hScore}</span></div>
         <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${aFlagEl}</span><span class="bracket-name">${aName}</span><span class="bracket-score">${aScore}</span></div>
