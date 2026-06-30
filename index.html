@@ -556,9 +556,10 @@ function openBonusModal(entry){
   const potLabels=['Pot 1','Pot 1','Pot 2','Pot 2','Pot 3','Pot 3','Pot 4','Pot 4'];
   teamsEl.innerHTML=player.teams.map((t,i)=>{
     const gc=getTeamGC(t);
-    return `<div class="team-card">
+    const out=isTeamEliminated(t);
+    return `<div class="team-card ${out?'team-eliminated':''}">
       <div class="pot-label">${potLabels[i]||''}</div>
-      <div class="team-name">${flag(t)} ${t}</div>
+      <div class="team-name">${flag(t)} ${t}${out?' <span class="elim-tag">OUT</span>':''}</div>
       <div style="font-size:11px;color:#e53935;font-weight:700;margin-top:2px">${gc} conceded</div>
     </div>`;
   }).join('');
@@ -1056,8 +1057,8 @@ function renderBracket(){
     const matches=byRound[r].map(f=>{
       const hWin=f.played&&(f.hasPens?f.penHomeGoals>f.penAwayGoals:f.homeGoals>f.awayGoals);
       const aWin=f.played&&(f.hasPens?f.penAwayGoals>f.penHomeGoals:f.awayGoals>f.homeGoals);
-      const hScore=f.played?f.homeGoals:'';
-      const aScore=f.played?f.awayGoals:'';
+      const hScore=f.played?(f.hasPens?`${f.homeGoals} (${f.penHomeGoals}p)`:f.homeGoals):'';
+      const aScore=f.played?(f.hasPens?`${f.awayGoals} (${f.penAwayGoals}p)`:f.awayGoals):'';
       const bracketSuffix=f.played?(f.hasPens?` (${f.penHomeGoals}-${f.penAwayGoals}p)`:f.aet?' aet':''):'';
       const hFeed=feederNum(f.home), aFeed=feederNum(f.away);
       const hName=hFeed!=null?`Winner M${hFeed}`:(abbr(f.home)||'TBC');
