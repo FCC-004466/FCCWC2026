@@ -822,8 +822,11 @@ function isTeamEliminated(teamName){
   // Knockout loss check
   const lostKO=allFixtures.some(f=>{
     if(!f.isKO||!f.played) return false;
-    if(matches(f.home)) return f.awayGoals>f.homeGoals;
-    if(matches(f.away)) return f.homeGoals>f.awayGoals;
+    // Determine winner — penalty shootout overrides FT score
+    const hWins=f.hasPens?f.penHomeGoals>f.penAwayGoals:f.homeGoals>f.awayGoals;
+    const aWins=f.hasPens?f.penAwayGoals>f.penHomeGoals:f.awayGoals>f.homeGoals;
+    if(matches(f.home)) return aWins;
+    if(matches(f.away)) return hWins;
     return false;
   });
   if(lostKO) return true;
@@ -944,9 +947,11 @@ function renderFixtures(targetId){
     const dateLabel=f.irish?f.irish.dateLabel:'TBC';
     const groupTag=f.groupLetter?`Grp ${f.groupLetter}`:(f.koRound?f.koRound:'');
     const hf=flag(f.home),af=flag(f.away);
-    const suffix=f.played?(f.hasPens?` (${f.penHomeGoals}-${f.penAwayGoals}p)`:f.aet?' aet':''):'';
     const scoreEl=f.played
-      ?`<div class="score-box ${f.isKO?'ko':''}"><span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span>${suffix?`<span class="score-suffix">${suffix}</span>`:''}</div>`
+      ?`<div class="score-box ${f.isKO?'ko':''}">
+          <span>${f.homeGoals}</span><span class="score-sep">–</span><span>${f.awayGoals}</span>
+          ${f.hasPens?`<span class="score-suffix">${f.penHomeGoals}-${f.penAwayGoals}p</span>`:f.aet?`<span class="score-suffix">aet</span>`:''}
+        </div>`
       :`<div class="score-box upcoming">${f.irish?f.irish.timeStr:'TBC'}</div>`;
     const venueEl=(f.venue&&!f.played)?`<div class="fix-venue">${f.venue}</div>`:'';
     return `<div class="fixture-block ${f.played?'is-played':''}">
