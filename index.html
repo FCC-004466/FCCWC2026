@@ -257,7 +257,8 @@
   <div class="controls">
     <div class="controls-inner">
       <select id="wc-view-select" onchange="setWcView(this.value)">
-        <option value="bracket" selected>Bracket</option>
+        <option value="bracket" selected>Bracket (R16+)</option>
+        <option value="bracket-r32">Bracket (R32)</option>
         <option value="groups">Groups</option>
         <option value="fixtures">Fixtures</option>
       </select>
@@ -624,7 +625,8 @@ async function loadAll(){
     {
       const wcSel=document.getElementById('wc-view-select');
       const wcView=wcSel?wcSel.value:'bracket';
-      if(wcView==='bracket') renderBracket();
+      if(wcView==='bracket') renderBracket(false);
+      else if(wcView==='bracket-r32') renderBracket(true);
       else if(wcView==='fixtures') renderFixtures('wc-fixtures-wrap');
     }
     document.getElementById('updated-tag').textContent=
@@ -971,11 +973,12 @@ function renderFixtures(targetId){
 // ── Render groups ────────────────────────────────────────────────────
 function setWcView(view){
   document.getElementById('wc-view-groups').style.display=view==='groups'?'block':'none';
-  document.getElementById('wc-view-bracket').style.display=view==='bracket'?'block':'none';
+  document.getElementById('wc-view-bracket').style.display=(view==='bracket'||view==='bracket-r32')?'block':'none';
   document.getElementById('wc-view-fixtures').style.display=view==='fixtures'?'block':'none';
   document.getElementById('fix-filter').style.display=view==='fixtures'?'inline-block':'none';
   document.getElementById('round-filter').style.display=view==='fixtures'?'inline-block':'none';
-  if(view==='bracket') renderBracket();
+  if(view==='bracket') renderBracket(false);
+  if(view==='bracket-r32') renderBracket(true);
   if(view==='fixtures') renderFixtures('wc-fixtures-wrap');
 }
 
@@ -996,13 +999,13 @@ const WC26_BRACKET_MAP={
   104:[101,102]
 };
 
-function renderBracket(){
+function renderBracket(showR32){
   const colsEl=document.getElementById('bracket-cols');
   if(!colsEl) return;
   const koMatches=allFixtures.filter(f=>f.isKO&&f.koRound&&f.koRound!=='3rd');
   if(!koMatches.length){colsEl.innerHTML='<div class="state-div">Bracket not available yet.</div>';return;}
 
-  const rounds=KO_ORDER.filter(r=>r!=='3rd').filter(r=>koMatches.some(f=>f.koRound===r));
+  const rounds=KO_ORDER.filter(r=>r!=='3rd').filter(r=>koMatches.some(f=>f.koRound===r)).filter(r=>showR32?true:r!=='R32');
   const byRound={};
   rounds.forEach(r=>byRound[r]=koMatches.filter(f=>f.koRound===r).sort((a,b)=>a.matchNum-b.matchNum));
   const byMatchNum={};
