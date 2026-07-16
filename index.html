@@ -1111,6 +1111,25 @@ function renderBracket(startRound){
       <div class="bracket-col-matches" style="height:${totalHeight}px">${matches}</div>
     </div>`;
   }).join('');
+
+  // 3rd place match below bracket
+  const thirdMatch=allFixtures.find(f=>f.koRound==='3rd');
+  if(thirdMatch){
+    const hWin=thirdMatch.played&&(thirdMatch.hasPens?thirdMatch.penHomeGoals>thirdMatch.penAwayGoals:thirdMatch.homeGoals>thirdMatch.awayGoals);
+    const aWin=thirdMatch.played&&(thirdMatch.hasPens?thirdMatch.penAwayGoals>thirdMatch.penHomeGoals:thirdMatch.awayGoals>thirdMatch.homeGoals);
+    const hScore=thirdMatch.played?(thirdMatch.hasPens?`${thirdMatch.homeGoals}(${thirdMatch.penHomeGoals}p)`:thirdMatch.homeGoals):'';
+    const aScore=thirdMatch.played?(thirdMatch.hasPens?`${thirdMatch.awayGoals}(${thirdMatch.penAwayGoals}p)`:thirdMatch.awayGoals):'';
+    const dateStr=thirdMatch.irish?`${thirdMatch.irish.dateLabel} ${thirdMatch.irish.timeStr}`:'Date TBC';
+    const thirdDiv=document.createElement('div');
+    thirdDiv.className='bracket-third';
+    thirdDiv.innerHTML=`<div class="bracket-third-label">🥉 3rd Place Play-off · M${thirdMatch.matchNum} · ${dateStr}</div>
+      ${thirdMatch.venue?`<div style="font-size:9px;color:#9ab89a;margin-bottom:6px">${thirdMatch.venue}</div>`:''}
+      <div class="bracket-match" style="position:relative;top:0;height:${MATCH_H}px;max-width:210px;margin:0 auto">
+        <div class="bracket-team ${hWin?'bracket-winner':''}"><span class="bracket-flag">${flag(thirdMatch.home)}</span><span class="bracket-name">${abbr(thirdMatch.home)||'TBC'}</span><span class="bracket-score">${hScore}</span></div>
+        <div class="bracket-team ${aWin?'bracket-winner':''}"><span class="bracket-flag">${flag(thirdMatch.away)}</span><span class="bracket-name">${abbr(thirdMatch.away)||'TBC'}</span><span class="bracket-score">${aScore}</span></div>
+      </div>`;
+    document.getElementById('bracket-wrap').appendChild(thirdDiv);
+  }
 }
 
 function renderGroups(){
