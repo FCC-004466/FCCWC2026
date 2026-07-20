@@ -616,14 +616,21 @@ function renderResults(){
     const icon=isLast?'🪣':icons[e.rank]||e.rank;
     const prize=isLast?'€50':prizes[e.rank]||'';
     const style=isLast?'last':styles[e.rank]||'';
+    const label=isLast?'Last':(e.rank===1?'1st':e.rank===2?'2nd':e.rank===3?'3rd':'4th');
     return `<div class="results-row ${style}">
-      <div class="results-pos">${icon}</div>
-      <div class="results-name">${e.name}</div>
-      <div class="results-prize">${prize}</div>
+      <span class="results-pos">${label}</span>
+      <span class="results-name">${e.name}</span>
+      <span class="results-prize">${prize}</span>
     </div>`;
   }).join('');
 
-  bonusEl.innerHTML=`<div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Sean T Guinan</div><div class="results-prize">€40</div></div><div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Oliver Hoey</div><div class="results-prize">€40</div></div><div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Leon Leonard</div><div class="results-prize">€40</div></div><div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Ross O Reilly</div><div class="results-prize">€40</div></div>`;
+  bonusEl.innerHTML=[
+    ['Sean T Guinan','€40'],['Oliver Hoey','€40'],['Leon Leonard','€40'],['Ross O Reilly','€40']
+  ].map(([name,prize],i)=>`<div class="results-row">
+    <span class="results-pos">B${i+1}</span>
+    <span class="results-name">${name}</span>
+    <span class="results-prize">${prize}</span>
+  </div>`).join('');
 }
 async function loadAll(){
   try{
