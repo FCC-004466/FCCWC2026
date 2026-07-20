@@ -206,7 +206,8 @@
     </div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('leaderboard',this)">🏆 Standings</button>
+    <button class="nav-tab active" onclick="showPage('results',this)">🎖️ Results</button>
+    <button class="nav-tab" onclick="showPage('leaderboard',this)">🏆 Standings</button>
     <button class="nav-tab" onclick="showPage('entries',this)">👥 Entries</button>
     <button class="nav-tab" onclick="showPage('groups',this)">📅 Fixtures</button>
     <button class="nav-tab" onclick="showPage('bonus',this)">🎯 Bonus</button>
@@ -219,7 +220,7 @@
 </div>
 
 <!-- LEADERBOARD -->
-<div id="page-leaderboard" class="page active">
+<div id="page-leaderboard" class="page">
   <div class="controls">
     <div class="controls-inner">
       <input type="text" id="search" placeholder="Search or tap a name for teams…" oninput="renderLeaderboard()">
@@ -573,6 +574,39 @@ function openBonusModal(entry){
 }
 
 // ── Bonus group draw (fixed seed 2026) ──────────────────────────────
+
+function renderResults(){
+  const main=document.getElementById('results-main');
+  const bonusEl=document.getElementById('results-bonus');
+  if(!main) return;
+
+  // Top 4 + Last from allEntries (already sorted by rank)
+  if(!allEntries.length){main.innerHTML='<div class="state-div">Loading…</div>';return;}
+
+  const prizes={1:'€300',2:'€120',3:'€60',4:'€40'};
+  const icons={1:'🥇',2:'🥈',3:'🥉',4:'4️⃣'};
+  const styles={1:'gold',2:'silver',3:'bronze',4:''};
+
+  const top4=allEntries.filter(e=>e.rank<=4).slice(0,4);
+  const last=allEntries[allEntries.length-1];
+
+  const mainRows=[...top4];
+  if(last&&last.rank>4) mainRows.push({...last,isLast:true});
+
+  main.innerHTML=mainRows.map(e=>{
+    const isLast=e.isLast||false;
+    const icon=isLast?'🪣':icons[e.rank]||e.rank;
+    const prize=isLast?'€50':prizes[e.rank]||'';
+    const style=isLast?'last':styles[e.rank]||'';
+    return `<div class="results-row ${style}">
+      <div class="results-pos">${icon}</div>
+      <div class="results-name">${e.name}</div>
+      <div class="results-prize">${prize}</div>
+    </div>`;
+  }).join('');
+
+  bonusEl.innerHTML=`<div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Sean T Guinan</div><div class="results-prize">€40</div></div><div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Oliver Hoey</div><div class="results-prize">€40</div></div><div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Leon Leonard</div><div class="results-prize">€40</div></div><div class="results-row"><div class="results-pos">🎯</div><div class="results-name">Ross O Reilly</div><div class="results-prize">€40</div></div>`;
+}
 async function loadAll(){
   try{
     const bust='&cachebust='+Date.now();
@@ -627,7 +661,7 @@ async function loadAll(){
       });
     }
 
-    renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus();
+    renderLeaderboard(); renderFixtures(); renderGroups(); renderEntries(); renderBonus(); renderResults();
     {
       const wcSel=document.getElementById('wc-view-select');
       const wcView=wcSel?wcSel.value:'bracket';
